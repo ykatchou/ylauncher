@@ -5,8 +5,11 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ylauncher.data.db.FavoriteDao
+import com.ylauncher.data.db.FolderDao
 import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.model.FavoriteApp
+import com.ylauncher.data.model.Folder
+import com.ylauncher.data.model.FolderApp
 import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.data.repository.PrefsRepository
 import com.ylauncher.util.UsageStatsHelper
@@ -26,6 +29,7 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val appRepository: AppRepository,
     private val favoriteDao: FavoriteDao,
+    private val folderDao: FolderDao,
     private val prefsRepository: PrefsRepository,
 ) : ViewModel() {
 
@@ -150,6 +154,87 @@ class HomeViewModel @Inject constructor(
             favoriteDao.deleteAll()
             favoriteDao.insertAll(favorites)
         }
+    }
+
+    // Folder operations
+
+    fun createFolder(name: String = "New Folder", emoji: String = "📁") {
+        viewModelScope.launch {
+            val currentFavs = favoriteDao.getAllFavoritesOnce()
+            val nextPosition = (currentFavs.maxOfOrNull { it.position } ?: -1) + 1
+            val folderId = folderDao.insertFolder(Folder(name = name, position = nextPosition, iconEmoji = emoji))
+            favoriteDao.insertFavorite(
+                FavoriteApp(
+                    position = nextPosition,
+                    packageName = "",
+                    displayName = name,
+                    folderId = folderId,
+                    iconEmoji = emoji,
+                )
+            )
+        }
+    }
+
+    fun getFolderApps(folderId: Long): kotlinx.coroutines.flow.Flow<List<FolderApp>> {
+        return folderDao.getAppsInFolder(folderId)
+    }
+
+    suspend fun getFolderAppsOnce(folderId: Long): List<FolderApp> {
+        return folderDao.getAppsInFolderOnce(folderId)
+    }
+
+    fun updateFolder(folderId: Long, name: String, emoji: String, apps: List<FolderApp>) {
+        viewModelScope.launch {
+            // Update folder entity
+            val existing = folderDao.getFolderById(folderId) ?: return@launch
+            folderDao.updateFolder(existing.copy(name = name, iconEmoji = emoji))
+
+            // Update the favorite entry to keep display in sync
+            val favs = favoriteDao.getAllFavoritesOnce()
+            val folderFav = favs.find { it.folderId == folderId }
+            if (folderFav != null) {
+                favoriteDao.updateFavorite(folderFav.copy(displayName = name, iconEmoji = emoji))
+            }
+
+            // Replace folder apps
+            folderDao.deleteAllAppsInFolder(folderId)
+            apps.forEachIndexed { index, app ->
+                folderDao.insertFolderApp(app.copy(folderId = folderId, position = index))
+            }
+        }
+    }
+
+    fun addAppToFolder(folderId: Long, app: AppInfo) {
+        viewModelScope.launch {
+            val existingApps = folderDao.getAppsInFolderOnce(folderId)
+            val nextPos = (existingApps.maxOfOrNull { it.position } ?: -1) + 1
+            folderDao.insertFolderApp(
+                FolderApp(
+                    folderId = folderId,
+                    packageName = app.packageName,
+                    activityClassName = app.activityClassName,
+                    displayName = app.appLabel,
+                    position = nextPos,
+                    userHandleString = app.userHandle.toString(),
+                )
+            )
+        }
+    }
+
+    fun deleteFolder(folderId: Long) {
+        viewModelScope.launch {
+            folderDao.deleteFolder(folderId)
+            // Remove the favorite entry
+            val favs = favoriteDao.getAllFavoritesOnce()
+            val folderFav = favs.find { it.folderId == folderId }
+            if (folderFav != null) {
+                favoriteDao.deleteFavoriteAt(folderFav.position)
+            }
+        }
+    }
+
+    fun getAllFolders(): kotlinx.coroutines.flow.Flow<List<Folder>> {
+        return folderDao.getAllFolders()
     }
 
     override fun onCleared() {

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.model.AppNotification
@@ -42,14 +43,16 @@ fun FavoriteItem(
     displayName: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    iconEmoji: String? = null,
+    isFolder: Boolean = false,
     notification: AppNotification? = null,
     onEditFavorites: (() -> Unit)? = null,
+    onEditFolder: (() -> Unit)? = null,
     onAppInfo: (() -> Unit)? = null,
     onUninstall: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    // Periodically refresh relative time so "2 min ago" stays accurate
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -68,15 +71,24 @@ fun FavoriteItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        appInfo?.icon?.let { drawable ->
-            val bitmap = remember(drawable) {
-                drawable.toBitmap(width = 44, height = 44).asImageBitmap()
-            }
-            Image(
-                bitmap = bitmap,
-                contentDescription = displayName,
+        if (isFolder && iconEmoji != null) {
+            // Folder: show emoji icon
+            Text(
+                text = iconEmoji,
+                fontSize = 32.sp,
                 modifier = Modifier.size(44.dp),
             )
+        } else {
+            appInfo?.icon?.let { drawable ->
+                val bitmap = remember(drawable) {
+                    drawable.toBitmap(width = 44, height = 44).asImageBitmap()
+                }
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = displayName,
+                    modifier = Modifier.size(44.dp),
+                )
+            }
         }
 
         Column {
@@ -115,19 +127,25 @@ fun FavoriteItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
         ) {
+            if (isFolder && onEditFolder != null) {
+                DropdownMenuItem(
+                    text = { Text("Edit folder") },
+                    onClick = { showMenu = false; onEditFolder() },
+                )
+            }
             if (onEditFavorites != null) {
                 DropdownMenuItem(
                     text = { Text("Edit favorites") },
                     onClick = { showMenu = false; onEditFavorites() },
                 )
             }
-            if (onAppInfo != null) {
+            if (!isFolder && onAppInfo != null) {
                 DropdownMenuItem(
                     text = { Text("App info") },
                     onClick = { showMenu = false; onAppInfo() },
                 )
             }
-            if (onUninstall != null) {
+            if (!isFolder && onUninstall != null) {
                 DropdownMenuItem(
                     text = { Text("Uninstall") },
                     onClick = { showMenu = false; onUninstall() },

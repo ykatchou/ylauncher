@@ -23,7 +23,7 @@ object AppModule {
             context,
             YLauncherDatabase::class.java,
             "ylauncher.db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides

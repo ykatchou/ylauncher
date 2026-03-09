@@ -94,6 +94,11 @@ fun HomeScreen(
     var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
     val density = LocalDensity.current
 
+    // Folder state
+    var openFolderId by remember { mutableStateOf<Long?>(null) }
+    var editingFolderId by remember { mutableStateOf<Long?>(null) }
+    var addingAppToFolderId by remember { mutableStateOf<Long?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Main home content with swipe detection
         Surface(
@@ -215,24 +220,38 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         favorites.forEach { favorite ->
-                            val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
-                                appRepository.findAppByPackage(favorite.packageName)
+                            if (favorite.isFolder && favorite.folderId != null) {
+                                // Folder item
+                                FavoriteItem(
+                                    appInfo = null,
+                                    displayName = favorite.displayName,
+                                    iconEmoji = favorite.iconEmoji,
+                                    isFolder = true,
+                                    onClick = { openFolderId = favorite.folderId },
+                                    onEditFavorites = { showEditFavorites = true },
+                                    onEditFolder = { editingFolderId = favorite.folderId },
+                                )
+                            } else {
+                                // Regular app item
+                                val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
+                                    appRepository.findAppByPackage(favorite.packageName)
+                                }
+                                FavoriteItem(
+                                    appInfo = appInfo,
+                                    displayName = favorite.displayName,
+                                    onClick = {
+                                        AppLauncher.launch(
+                                            context,
+                                            favorite.packageName,
+                                            favorite.activityClassName,
+                                        )
+                                    },
+                                    notification = notifications[favorite.packageName],
+                                    onEditFavorites = { showEditFavorites = true },
+                                    onAppInfo = { context.openAppInfo(favorite.packageName) },
+                                    onUninstall = { context.uninstallApp(favorite.packageName) },
+                                )
                             }
-                            FavoriteItem(
-                                appInfo = appInfo,
-                                displayName = favorite.displayName,
-                                onClick = {
-                                    AppLauncher.launch(
-                                        context,
-                                        favorite.packageName,
-                                        favorite.activityClassName,
-                                    )
-                                },
-                                notification = notifications[favorite.packageName],
-                                onEditFavorites = { showEditFavorites = true },
-                                onAppInfo = { context.openAppInfo(favorite.packageName) },
-                                onUninstall = { context.uninstallApp(favorite.packageName) },
-                            )
                         }
 
                         // App suggestions (most-used non-favorites)
@@ -326,6 +345,13 @@ fun HomeScreen(
                 onClick = { showBackgroundMenu = false; showEditFavorites = true },
             )
             DropdownMenuItem(
+                text = { Text("Add folder") },
+                onClick = {
+                    showBackgroundMenu = false
+                    viewModel.createFolder()
+                },
+            )
+            DropdownMenuItem(
                 text = { Text("Change wallpaper") },
                 onClick = {
                     showBackgroundMenu = false
@@ -394,6 +420,10 @@ fun HomeScreen(
                         viewModel.saveFavorites(reordered)
                         showEditFavorites = false
                     },
+                    onAddFolder = {
+                        viewModel.createFolder()
+                        showEditFavorites = false
+                    },
                     onDismiss = { showEditFavorites = false },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
@@ -402,6 +432,76 @@ fun HomeScreen(
                             interactionSource = null,
                             indication = null,
                         ) { /* consume clicks on sheet, don't dismiss */ },
+                )
+            }
+        }
+
+        // Folder popup
+        if (openFolderId != null) {
+            val folderId = openFolderId!!
+            val folderApps by viewModel.getFolderApps(folderId).collectAsState(initial = emptyList())
+            val folderFav = favorites.find { it.folderId == folderId }
+            FolderPopup(
+                folderName = folderFav?.displayName ?: "Folder",
+                folderEmoji = folderFav?.iconEmoji ?: "📁",
+                folderApps = folderApps,
+                resolveApp = { appRepository.findAppByPackage(it.packageName) },
+                onLaunchApp = { folderApp ->
+                    AppLauncher.launch(context, folderApp.packageName, folderApp.activityClassName)
+                    openFolderId = null
+                },
+                onEdit = {
+                    openFolderId = null
+                    editingFolderId = folderId
+                },
+                onDismiss = { openFolderId = null },
+            )
+        }
+
+        // Edit folder dialog
+        if (editingFolderId != null) {
+            val folderId = editingFolderId!!
+            val folderApps by viewModel.getFolderApps(folderId).collectAsState(initial = emptyList())
+            val folderFav = favorites.find { it.folderId == folderId }
+            EditFolderDialog(
+                initialName = folderFav?.displayName ?: "Folder",
+                initialEmoji = folderFav?.iconEmoji ?: "📁",
+                folderApps = folderApps,
+                resolveApp = { appRepository.findAppByPackage(it.packageName) },
+                onSave = { name, emoji, apps ->
+                    viewModel.updateFolder(folderId, name, emoji, apps)
+                    editingFolderId = null
+                },
+                onDelete = {
+                    viewModel.deleteFolder(folderId)
+                    editingFolderId = null
+                },
+                onAddApp = {
+                    addingAppToFolderId = folderId
+                    editingFolderId = null
+                },
+                onDismiss = { editingFolderId = null },
+            )
+        }
+
+        // Drawer in selection mode (for adding app to folder)
+        if (addingAppToFolderId != null) {
+            val folderId = addingAppToFolderId!!
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            ) {
+                AppDrawerScreen(
+                    onDismiss = {
+                        addingAppToFolderId = null
+                        editingFolderId = folderId
+                    },
+                    onAppSelected = { app ->
+                        viewModel.addAppToFolder(folderId, app)
+                        addingAppToFolderId = null
+                        editingFolderId = folderId
+                    },
                 )
             }
         }

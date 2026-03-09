@@ -8,7 +8,7 @@ import com.ylauncher.data.model.FolderApp
 
 @Database(
     entities = [FavoriteApp::class, Folder::class, FolderApp::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class YLauncherDatabase : RoomDatabase() {

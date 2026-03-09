@@ -26,6 +26,7 @@ import com.ylauncher.data.model.FavoriteApp
 fun EditFavoritesSheet(
     favorites: List<FavoriteApp>,
     onSave: (List<FavoriteApp>) -> Unit,
+    onAddFolder: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -38,7 +39,6 @@ fun EditFavoritesSheet(
         tonalElevation = 6.dp,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -61,8 +61,8 @@ fun EditFavoritesSheet(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            LazyColumn {
-                items(editList, key = { "${it.packageName}_${it.position}" }) { favorite ->
+            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                items(editList, key = { "${it.packageName}_${it.position}_${it.folderId}" }) { favorite ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -70,7 +70,6 @@ fun EditFavoritesSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        // Move up
                         IconButton(
                             onClick = {
                                 val idx = editList.indexOf(favorite)
@@ -84,7 +83,6 @@ fun EditFavoritesSheet(
                             Text("▲", style = MaterialTheme.typography.bodyLarge)
                         }
 
-                        // Move down
                         IconButton(
                             onClick = {
                                 val idx = editList.indexOf(favorite)
@@ -98,14 +96,20 @@ fun EditFavoritesSheet(
                             Text("▼", style = MaterialTheme.typography.bodyLarge)
                         }
 
-                        // App name
+                        // Icon prefix (emoji for folders)
+                        if (favorite.isFolder) {
+                            Text(
+                                text = favorite.iconEmoji ?: "📁",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+
                         Text(
                             text = favorite.displayName,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
 
-                        // Remove button
                         IconButton(onClick = { editList.remove(favorite) }) {
                             Text("✕", color = MaterialTheme.colorScheme.error)
                         }
@@ -113,14 +117,18 @@ fun EditFavoritesSheet(
                 }
             }
 
-            // Cancel button
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Cancel")
+                TextButton(onClick = onAddFolder) {
+                    Text("+ Add folder")
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
             }
         }
     }

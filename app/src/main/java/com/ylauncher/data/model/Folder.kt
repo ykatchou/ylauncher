@@ -12,6 +12,7 @@ data class Folder(
     val name: String,
     val position: Int,
     val isExpanded: Boolean = false,
+    val iconEmoji: String = "📁",
 )
 
 @Entity(
