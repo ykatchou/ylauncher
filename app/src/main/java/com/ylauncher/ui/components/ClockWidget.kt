@@ -12,19 +12,12 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.unit.dp
+import com.ylauncher.ui.theme.WallpaperTextShadow
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-private val wallpaperShadow = Shadow(
-    color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f),
-    offset = Offset(1f, 1f),
-    blurRadius = 4f,
-)
 
 @Composable
 fun ClockWidget(
@@ -37,7 +30,6 @@ fun ClockWidget(
     LaunchedEffect(Unit) {
         while (true) {
             currentTime = System.currentTimeMillis()
-            // Update every 30 seconds (enough for HH:mm display)
             delay(30_000L)
         }
     }
@@ -49,13 +41,13 @@ fun ClockWidget(
     Column(modifier = modifier.padding(horizontal = 24.dp)) {
         Text(
             text = timeFormat.format(date),
-            style = MaterialTheme.typography.displayLarge.copy(shadow = wallpaperShadow),
+            style = MaterialTheme.typography.displayLarge.copy(shadow = WallpaperTextShadow),
             color = com.ylauncher.ui.theme.HomeTextColor,
             modifier = Modifier.clickable { onClockClick() },
         )
         Text(
             text = dateFormat.format(date),
-            style = MaterialTheme.typography.labelLarge.copy(shadow = wallpaperShadow),
+            style = MaterialTheme.typography.labelLarge.copy(shadow = WallpaperTextShadow),
             color = com.ylauncher.ui.theme.HomeTextColorDim,
             modifier = Modifier
                 .padding(top = 2.dp)

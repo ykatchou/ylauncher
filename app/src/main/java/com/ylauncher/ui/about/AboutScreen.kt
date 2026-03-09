@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +44,7 @@ fun AboutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp, vertical = 32.dp),
         ) {
@@ -161,6 +163,17 @@ fun AboutScreen(
             )
 
             Spacer(modifier = Modifier.height(48.dp))
+
+            Text(
+                text = "← Back",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable { onBack() }
+                    .padding(vertical = 8.dp),
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

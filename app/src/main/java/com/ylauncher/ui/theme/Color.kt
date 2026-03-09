@@ -1,6 +1,15 @@
 package com.ylauncher.ui.theme
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+
+// Shared text shadow for readability over wallpaper
+val WallpaperTextShadow = Shadow(
+    color = Color.Black.copy(alpha = 0.6f),
+    offset = Offset(1f, 1f),
+    blurRadius = 4f,
+)
 
 // HAL 9000 inspired accent
 val HalRed = Color(0xFFCC0000)

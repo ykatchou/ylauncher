@@ -57,6 +57,7 @@ import com.ylauncher.util.expandNotificationDrawer
 import com.ylauncher.util.openAppInfo
 import com.ylauncher.util.openCameraApp
 import com.ylauncher.util.openDialerApp
+import com.ylauncher.util.showToast
 import com.ylauncher.util.uninstallApp
 import kotlin.math.abs
 
@@ -255,7 +256,12 @@ fun HomeScreen(
                         HalButton(
                             onClick = {
                                 if (halAssistantPackage.isNotBlank()) {
-                                    AppLauncher.launch(context, halAssistantPackage)
+                                    val launched = AppLauncher.launch(context, halAssistantPackage)
+                                    if (!launched) {
+                                        context.showToast("Assistant app not found — configure in Settings")
+                                    }
+                                } else {
+                                    context.showToast("No assistant configured — set one in Settings")
                                 }
                             },
                             onLongClick = { showHalMenu = true },
@@ -312,7 +318,10 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
-                    .clickable { showEditFavorites = false },
+                    .clickable(
+                        interactionSource = null,
+                        indication = null,
+                    ) { showEditFavorites = false },
                 contentAlignment = Alignment.Center,
             ) {
                 EditFavoritesSheet(
@@ -324,7 +333,11 @@ fun HomeScreen(
                     onDismiss = { showEditFavorites = false },
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                        ) { /* consume clicks on sheet, don't dismiss */ },
                 )
             }
         }

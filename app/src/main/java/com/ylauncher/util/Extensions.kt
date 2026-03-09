@@ -40,7 +40,8 @@ fun Context.expandNotificationDrawer() {
 
 fun Context.openSearch(query: String? = null) {
     try {
-        val url = "https://duck.co/?q=${query?.replace(" ", "%20") ?: ""}"
+        val encoded = Uri.encode(query?.trim() ?: "")
+        val url = "https://duckduckgo.com/?q=$encoded"
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)

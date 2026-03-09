@@ -14,14 +14,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,12 +30,10 @@ import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.model.AppNotification
 import com.ylauncher.ui.theme.HomeTextColor
 import com.ylauncher.ui.theme.HomeTextColorDim
+import com.ylauncher.ui.theme.WallpaperTextShadow
+import kotlinx.coroutines.delay
 
-private val wallpaperShadow = Shadow(
-    color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f),
-    offset = Offset(1f, 1f),
-    blurRadius = 4f,
-)
+private val wallpaperShadow = WallpaperTextShadow
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -50,6 +48,15 @@ fun FavoriteItem(
     onUninstall: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+
+    // Periodically refresh relative time so "2 min ago" stays accurate
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000L)
+            now = System.currentTimeMillis()
+        }
+    }
 
     Row(
         modifier = modifier
@@ -80,10 +87,10 @@ fun FavoriteItem(
             )
 
             if (notification != null) {
-                val timeAgo = remember(notification.timestamp) {
+                val timeAgo = remember(notification.timestamp, now) {
                     DateUtils.getRelativeTimeSpanString(
                         notification.timestamp,
-                        System.currentTimeMillis(),
+                        now,
                         DateUtils.MINUTE_IN_MILLIS,
                         DateUtils.FORMAT_ABBREV_RELATIVE,
                     ).toString()

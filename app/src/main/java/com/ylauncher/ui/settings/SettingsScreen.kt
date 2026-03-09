@@ -22,7 +22,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +48,12 @@ fun SettingsScreen(
     val leftHandMode by prefsRepository.leftHandMode.collectAsState(initial = false)
     val swipeLeftEnabled by prefsRepository.swipeLeftEnabled.collectAsState(initial = true)
     val swipeRightEnabled by prefsRepository.swipeRightEnabled.collectAsState(initial = true)
+    val swipeLeftName by prefsRepository.swipeLeftName.collectAsState(initial = "Camera")
+    val swipeRightName by prefsRepository.swipeRightName.collectAsState(initial = "Phone")
     val textSizeScale by prefsRepository.textSizeScale.collectAsState(initial = 1f)
+
+    // Local state for slider to avoid excessive DataStore writes during drag
+    var sliderValue by remember(textSizeScale) { mutableFloatStateOf(textSizeScale) }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -87,7 +95,7 @@ fun SettingsScreen(
                 onCheckedChange = { scope.launch { prefsRepository.setLeftHandMode(it) } },
             )
 
-            // Text size slider
+            // Text size slider — writes only on release
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
                     text = "Text size",
@@ -95,17 +103,41 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "${(textSizeScale * 100).roundToInt()}%",
+                    text = "${(sliderValue * 100).roundToInt()}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 )
                 Slider(
-                    value = textSizeScale,
-                    onValueChange = { scope.launch { prefsRepository.setTextSizeScale((it * 100).roundToInt()) } },
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    onValueChangeFinished = {
+                        scope.launch { prefsRepository.setTextSizeScale((sliderValue * 100).roundToInt()) }
+                    },
                     valueRange = 0.8f..1.4f,
                     steps = 5,
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Gestures")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsToggle(
+                title = "Swipe left → $swipeLeftName",
+                subtitle = "Swipe left on home to open $swipeLeftName",
+                checked = swipeLeftEnabled,
+                onCheckedChange = { scope.launch { prefsRepository.setSwipeLeftEnabled(it) } },
+            )
+
+            SettingsToggle(
+                title = "Swipe right → $swipeRightName",
+                subtitle = "Swipe right on home to open $swipeRightName",
+                checked = swipeRightEnabled,
+                onCheckedChange = { scope.launch { prefsRepository.setSwipeRightEnabled(it) } },
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
@@ -119,20 +151,6 @@ fun SettingsScreen(
                 subtitle = "Open keyboard when app drawer opens",
                 checked = autoShowKeyboard,
                 onCheckedChange = { scope.launch { prefsRepository.setAutoShowKeyboard(it) } },
-            )
-
-            SettingsToggle(
-                title = "Swipe left → Camera",
-                subtitle = "Swipe left on home to open camera",
-                checked = swipeLeftEnabled,
-                onCheckedChange = { scope.launch { prefsRepository.setSwipeLeftEnabled(it) } },
-            )
-
-            SettingsToggle(
-                title = "Swipe right → Phone",
-                subtitle = "Swipe right on home to open phone",
-                checked = swipeRightEnabled,
-                onCheckedChange = { scope.launch { prefsRepository.setSwipeRightEnabled(it) } },
             )
 
             Spacer(modifier = Modifier.height(32.dp))

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -69,11 +70,17 @@ fun AppDrawerScreen(
     val filteredApps by viewModel.filteredApps.collectAsState()
     val autoShowKeyboard by viewModel.autoShowKeyboard.collectAsState()
     val leftHandMode by viewModel.leftHandMode.collectAsState()
+    val hiddenApps by viewModel.hiddenApps.collectAsState()
     val listState = rememberLazyListState()
 
     val scope = rememberCoroutineScope()
 
     BackHandler { onDismiss() }
+
+    // Reset search query each time the drawer opens
+    LaunchedEffect(Unit) {
+        viewModel.updateSearchQuery("")
+    }
 
     // Auto-launch when single match
     LaunchedEffect(filteredApps, searchQuery) {
@@ -103,7 +110,8 @@ fun AppDrawerScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         ) {
             // Search bar
             TextField(
@@ -177,6 +185,12 @@ fun AppDrawerScreen(
                             },
                             onAppInfo = { context.openAppInfo(app.packageName) },
                             onUninstall = { context.uninstallApp(app.packageName) },
+                            onHide = {
+                                viewModel.hideApp(app)
+                            },
+                            onAddToHome = {
+                                viewModel.addToHome(app)
+                            },
                         )
                     }
                 }
@@ -216,6 +230,8 @@ fun AppDrawerItem(
     modifier: Modifier = Modifier,
     onAppInfo: (() -> Unit)? = null,
     onUninstall: (() -> Unit)? = null,
+    onHide: (() -> Unit)? = null,
+    onAddToHome: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -252,6 +268,18 @@ fun AppDrawerItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
         ) {
+            if (onAddToHome != null) {
+                DropdownMenuItem(
+                    text = { Text("Add to home") },
+                    onClick = { showMenu = false; onAddToHome() },
+                )
+            }
+            if (onHide != null) {
+                DropdownMenuItem(
+                    text = { Text("Hide") },
+                    onClick = { showMenu = false; onHide() },
+                )
+            }
             if (onAppInfo != null) {
                 DropdownMenuItem(
                     text = { Text("App info") },
