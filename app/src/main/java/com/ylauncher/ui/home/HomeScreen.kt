@@ -271,8 +271,23 @@ fun HomeScreen(
                                     onClick = {
                                         AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
                                     },
-                                    // suggestions are slightly dimmer
                                     modifier = Modifier.alpha(0.6f),
+                                )
+                            }
+                        }
+
+                        // Recently used apps
+                        val recentApps by viewModel.recentApps.collectAsState()
+                        if (recentApps.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            recentApps.forEach { app ->
+                                FavoriteItem(
+                                    appInfo = app,
+                                    displayName = app.appLabel,
+                                    onClick = {
+                                        AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                    },
+                                    modifier = Modifier.alpha(0.4f),
                                 )
                             }
                         }

@@ -75,4 +75,48 @@ object UsageStatsHelper {
             .mapNotNull { (pkg, _) -> appRepository.findAppByPackage(pkg) }
             .take(count)
     }
+
+    /**
+     * Returns the most recently used apps (by last time used), excluding
+     * system launchers, ourselves, and the given set of excluded packages.
+     */
+    fun getRecentApps(
+        context: Context,
+        appRepository: AppRepository,
+        count: Int = 3,
+        excludePackages: Set<String> = emptySet(),
+    ): List<AppInfo> {
+        if (!hasPermission(context)) return emptyList()
+
+        val usageStatsManager =
+            context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - (24L * 60 * 60 * 1000) // last 24 hours
+
+        val stats = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY, startTime, endTime,
+        )
+
+        if (stats.isNullOrEmpty()) return emptyList()
+
+        val systemExcluded = setOf(
+            context.packageName,
+            "com.android.launcher",
+            "com.android.launcher3",
+            "com.google.android.apps.nexuslauncher",
+            "com.sec.android.app.launcher",
+            "bitpit.launcher",
+            "bitpit.launcher.pro",
+        )
+
+        val allExcluded = systemExcluded + excludePackages
+
+        // Pick most recently used, deduplicated
+        return stats
+            .filter { it.packageName !in allExcluded && it.lastTimeUsed > 0 && it.totalTimeInForeground > 0 }
+            .sortedByDescending { it.lastTimeUsed }
+            .distinctBy { it.packageName }
+            .mapNotNull { appRepository.findAppByPackage(it.packageName) }
+            .take(count)
+    }
 }

@@ -41,6 +41,8 @@ class PrefsRepository @Inject constructor(
         val HAL_ASSISTANT_PACKAGE = stringPreferencesKey("hal_assistant_package")
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
         val LEFT_HAND_MODE = booleanPreferencesKey("left_hand_mode")
+        val SUGGESTION_COUNT = intPreferencesKey("suggestion_count")
+        val RECENT_APPS_COUNT = intPreferencesKey("recent_apps_count")
     }
 
     val isFirstLaunch: Flow<Boolean> = dataStore.data.map { it[FIRST_LAUNCH] ?: true }
@@ -65,6 +67,9 @@ class PrefsRepository @Inject constructor(
     }
 
     val leftHandMode: Flow<Boolean> = dataStore.data.map { it[LEFT_HAND_MODE] ?: false }
+
+    val suggestionCount: Flow<Int> = dataStore.data.map { it[SUGGESTION_COUNT] ?: 3 }
+    val recentAppsCount: Flow<Int> = dataStore.data.map { it[RECENT_APPS_COUNT] ?: 0 }
 
     suspend fun setFirstLaunchDone() {
         dataStore.edit { it[FIRST_LAUNCH] = false }
@@ -116,5 +121,13 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setLeftHandMode(enabled: Boolean) {
         dataStore.edit { it[LEFT_HAND_MODE] = enabled }
+    }
+
+    suspend fun setSuggestionCount(count: Int) {
+        dataStore.edit { it[SUGGESTION_COUNT] = count }
+    }
+
+    suspend fun setRecentAppsCount(count: Int) {
+        dataStore.edit { it[RECENT_APPS_COUNT] = count }
     }
 }

@@ -54,9 +54,13 @@ fun SettingsScreen(
     val swipeLeftName by prefsRepository.swipeLeftName.collectAsState(initial = "Camera")
     val swipeRightName by prefsRepository.swipeRightName.collectAsState(initial = "Phone")
     val textSizeScale by prefsRepository.textSizeScale.collectAsState(initial = 1f)
+    val suggestionCount by prefsRepository.suggestionCount.collectAsState(initial = 3)
+    val recentAppsCount by prefsRepository.recentAppsCount.collectAsState(initial = 0)
 
-    // Local state for slider to avoid excessive DataStore writes during drag
+    // Local state for sliders to avoid excessive DataStore writes during drag
     var sliderValue by remember(textSizeScale) { mutableFloatStateOf(textSizeScale) }
+    var suggestionSlider by remember(suggestionCount) { mutableFloatStateOf(suggestionCount.toFloat()) }
+    var recentSlider by remember(recentAppsCount) { mutableFloatStateOf(recentAppsCount.toFloat()) }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -118,6 +122,52 @@ fun SettingsScreen(
                     },
                     valueRange = 0.8f..1.4f,
                     steps = 5,
+                )
+            }
+
+            // Suggestion count slider
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = "Suggested apps",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = if (suggestionSlider.roundToInt() == 0) "Off" else "${suggestionSlider.roundToInt()} most used",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+                Slider(
+                    value = suggestionSlider,
+                    onValueChange = { suggestionSlider = it },
+                    onValueChangeFinished = {
+                        scope.launch { prefsRepository.setSuggestionCount(suggestionSlider.roundToInt()) }
+                    },
+                    valueRange = 0f..8f,
+                    steps = 7,
+                )
+            }
+
+            // Recent apps count slider
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = "Recent apps",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = if (recentSlider.roundToInt() == 0) "Off" else "${recentSlider.roundToInt()} last used",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+                Slider(
+                    value = recentSlider,
+                    onValueChange = { recentSlider = it },
+                    onValueChangeFinished = {
+                        scope.launch { prefsRepository.setRecentAppsCount(recentSlider.roundToInt()) }
+                    },
+                    valueRange = 0f..8f,
+                    steps = 7,
                 )
             }
 

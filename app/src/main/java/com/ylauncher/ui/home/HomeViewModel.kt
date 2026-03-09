@@ -39,10 +39,34 @@ class HomeViewModel @Inject constructor(
     val suggestedApps: StateFlow<List<AppInfo>> = combine(
         favorites,
         appRepository.appList,
-    ) { favs, allApps ->
+        prefsRepository.suggestionCount,
+    ) { favs, _, count ->
+        if (count == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
-        val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = 12)
-        topApps.filter { it.packageName !in favPackages }.take(3)
+        val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = count + 10)
+        topApps.filter { it.packageName !in favPackages }.take(count)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val recentApps: StateFlow<List<AppInfo>> = combine(
+        favorites,
+        appRepository.appList,
+        prefsRepository.recentAppsCount,
+        prefsRepository.suggestionCount,
+    ) { favs, _, recentCount, suggCount ->
+        if (recentCount == 0) return@combine emptyList()
+        val favPackages = favs.map { it.packageName }.toSet()
+        // Also exclude suggested apps to avoid duplicates
+        val suggested = if (suggCount > 0) {
+            UsageStatsHelper.getTopApps(context, appRepository, count = suggCount + 10)
+                .filter { it.packageName !in favPackages }
+                .take(suggCount)
+                .map { it.packageName }
+                .toSet()
+        } else emptySet()
+        UsageStatsHelper.getRecentApps(
+            context, appRepository, count = recentCount,
+            excludePackages = favPackages + suggested,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val showClock = prefsRepository.showClock
