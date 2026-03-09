@@ -48,6 +48,7 @@ fun FavoriteItem(
     notification: AppNotification? = null,
     onEditFavorites: (() -> Unit)? = null,
     onEditFolder: (() -> Unit)? = null,
+    onMoveToFolder: (() -> Unit)? = null,
     onAppInfo: (() -> Unit)? = null,
     onUninstall: (() -> Unit)? = null,
 ) {
@@ -131,6 +132,12 @@ fun FavoriteItem(
                 DropdownMenuItem(
                     text = { Text("Edit folder") },
                     onClick = { showMenu = false; onEditFolder() },
+                )
+            }
+            if (!isFolder && onMoveToFolder != null) {
+                DropdownMenuItem(
+                    text = { Text("Move to folder") },
+                    onClick = { showMenu = false; onMoveToFolder() },
                 )
             }
             if (onEditFavorites != null) {

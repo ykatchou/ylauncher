@@ -237,6 +237,26 @@ class HomeViewModel @Inject constructor(
         return folderDao.getAllFolders()
     }
 
+    fun moveFavoriteToFolder(favorite: FavoriteApp, folderId: Long) {
+        viewModelScope.launch {
+            // Add the app into the folder
+            val existingApps = folderDao.getAppsInFolderOnce(folderId)
+            val nextPos = (existingApps.maxOfOrNull { it.position } ?: -1) + 1
+            folderDao.insertFolderApp(
+                FolderApp(
+                    folderId = folderId,
+                    packageName = favorite.packageName,
+                    activityClassName = favorite.activityClassName,
+                    displayName = favorite.displayName,
+                    position = nextPos,
+                    userHandleString = favorite.userHandleString,
+                )
+            )
+            // Remove it from favorites
+            favoriteDao.deleteFavoriteAt(favorite.position)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         appRepository.unregisterCallback()

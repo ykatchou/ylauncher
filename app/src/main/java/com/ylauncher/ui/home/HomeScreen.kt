@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
+import com.ylauncher.data.model.FavoriteApp
 import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.service.NotificationService
 import com.ylauncher.service.ScreenLockService
@@ -98,6 +99,8 @@ fun HomeScreen(
     var openFolderId by remember { mutableStateOf<Long?>(null) }
     var editingFolderId by remember { mutableStateOf<Long?>(null) }
     var addingAppToFolderId by remember { mutableStateOf<Long?>(null) }
+    var movingFavorite by remember { mutableStateOf<FavoriteApp?>(null) }
+    val allFolders by viewModel.getAllFolders().collectAsState(initial = emptyList())
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Main home content with swipe detection
@@ -248,6 +251,9 @@ fun HomeScreen(
                                     },
                                     notification = notifications[favorite.packageName],
                                     onEditFavorites = { showEditFavorites = true },
+                                    onMoveToFolder = if (allFolders.isNotEmpty()) {
+                                        { movingFavorite = favorite }
+                                    } else null,
                                     onAppInfo = { context.openAppInfo(favorite.packageName) },
                                     onUninstall = { context.uninstallApp(favorite.packageName) },
                                 )
@@ -504,6 +510,18 @@ fun HomeScreen(
                     },
                 )
             }
+        }
+
+        // Folder picker for "Move to folder"
+        if (movingFavorite != null) {
+            FolderPickerDialog(
+                folders = allFolders,
+                onFolderSelected = { folder ->
+                    viewModel.moveFavoriteToFolder(movingFavorite!!, folder.id)
+                    movingFavorite = null
+                },
+                onDismiss = { movingFavorite = null },
+            )
         }
     }
 }
