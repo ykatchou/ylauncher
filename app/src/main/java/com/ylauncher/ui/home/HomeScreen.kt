@@ -1,5 +1,6 @@
 package com.ylauncher.ui.home
 
+import android.app.WallpaperManager
 import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.CalendarContract
@@ -42,6 +43,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
@@ -87,6 +90,9 @@ fun HomeScreen(
     var totalDragY by remember { mutableFloatStateOf(0f) }
     var showEditFavorites by remember { mutableStateOf(false) }
     var showHalMenu by remember { mutableStateOf(false) }
+    var showBackgroundMenu by remember { mutableStateOf(false) }
+    var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
+    val density = LocalDensity.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Main home content with swipe detection
@@ -140,6 +146,12 @@ fun HomeScreen(
                     detectTapGestures(
                         onDoubleTap = {
                             ScreenLockService.instance?.lockScreen()
+                        },
+                        onLongPress = { offset ->
+                            with(density) {
+                                menuOffset = DpOffset(offset.x.toDp(), offset.y.toDp())
+                            }
+                            showBackgroundMenu = true
                         },
                     )
                 },
@@ -301,6 +313,58 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // Background long-press context menu
+        DropdownMenu(
+            expanded = showBackgroundMenu,
+            onDismissRequest = { showBackgroundMenu = false },
+            offset = menuOffset,
+        ) {
+            DropdownMenuItem(
+                text = { Text("Edit favorites") },
+                onClick = { showBackgroundMenu = false; showEditFavorites = true },
+            )
+            DropdownMenuItem(
+                text = { Text("Change wallpaper") },
+                onClick = {
+                    showBackgroundMenu = false
+                    try {
+                        context.startActivity(
+                            Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    } catch (_: Exception) {
+                        try {
+                            context.startActivity(
+                                Intent(WallpaperManager.ACTION_CROP_AND_SET_WALLPAPER)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        } catch (_: Exception) {
+                            context.showToast("No wallpaper picker found")
+                        }
+                    }
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Reimport favorites") },
+                onClick = {
+                    showBackgroundMenu = false
+                    if (viewModel.hasUsageStatsPermission()) {
+                        viewModel.reimportFromUsageStats()
+                    } else {
+                        viewModel.requestUsageStatsPermission()
+                    }
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Settings") },
+                onClick = { showBackgroundMenu = false; onNavigateToSettings() },
+            )
+            DropdownMenuItem(
+                text = { Text("About") },
+                onClick = { showBackgroundMenu = false; onNavigateToAbout() },
+            )
         }
 
         // App drawer overlay

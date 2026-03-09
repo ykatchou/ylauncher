@@ -28,9 +28,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ylauncher.data.repository.PrefsRepository
+import com.ylauncher.util.openDefaultLauncherSettings
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -42,6 +44,7 @@ fun SettingsScreen(
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     val showClock by prefsRepository.showClock.collectAsState(initial = true)
     val autoShowKeyboard by prefsRepository.autoShowKeyboard.collectAsState(initial = true)
@@ -151,6 +154,33 @@ fun SettingsScreen(
                 subtitle = "Open keyboard when app drawer opens",
                 checked = autoShowKeyboard,
                 onCheckedChange = { scope.launch { prefsRepository.setAutoShowKeyboard(it) } },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("System")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Default launcher",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = "Change which launcher is used as your home screen",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Text(
+                text = "Open launcher settings →",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable { context.openDefaultLauncherSettings() }
+                    .padding(vertical = 8.dp),
             )
 
             Spacer(modifier = Modifier.height(32.dp))

@@ -75,3 +75,13 @@ fun Context.uninstallApp(packageName: String) {
 fun Context.showToast(message: String) {
     Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }
+
+fun Context.openDefaultLauncherSettings() {
+    try {
+        val intent = Intent(android.provider.Settings.ACTION_HOME_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+    } catch (e: Exception) {
+        showToast("Cannot open launcher settings")
+    }
+}
