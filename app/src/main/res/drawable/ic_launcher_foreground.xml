@@ -1,11 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- "y" letter in white, centered -->
+
+    <!-- Outer ambient red glow (subtle, behind bezel) -->
+    <path android:pathData="M54,54m-38,0a38,38,0,1,1,76,0a38,38,0,1,1,-76,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="38">
+                <item android:offset="0" android:color="#44FF2200" />
+                <item android:offset="0.6" android:color="#22FF1100" />
+                <item android:offset="1" android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Outer metallic bezel — brushed silver look -->
+    <path android:pathData="M54,54m-30,0a30,30,0,1,1,60,0a30,30,0,1,1,-60,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="46"
+                android:gradientRadius="34">
+                <item android:offset="0" android:color="#FF78787E" />
+                <item android:offset="0.4" android:color="#FF5A5A62" />
+                <item android:offset="0.8" android:color="#FF3E3E44" />
+                <item android:offset="1" android:color="#FF2E2E34" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Top-light sheen on bezel -->
+    <path android:pathData="M54,54m-30,0a30,30,0,1,1,60,0a30,30,0,1,1,-60,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="24"
+                android:endX="54"
+                android:endY="60">
+                <item android:offset="0" android:color="#44CCCCDD" />
+                <item android:offset="0.5" android:color="#00000000" />
+                <item android:offset="1" android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Bezel outer bright ring -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M44.5,38L50.2,52.5L55.9,38L61,38L52.5,58L52.5,70L48,70L48,58L39.5,38Z" />
+        android:pathData="M54,54m-30,0a30,30,0,1,1,60,0a30,30,0,1,1,-60,0"
+        android:strokeWidth="1.2"
+        android:strokeColor="#66999999"
+        android:fillColor="#00000000" />
+
+    <!-- Inner dark cavity -->
+    <path
+        android:pathData="M54,54m-23.5,0a23.5,23.5,0,1,1,47,0a23.5,23.5,0,1,1,-47,0"
+        android:fillColor="#FF141418" />
+
+    <!-- Inner cavity edge — subtle inset ring -->
+    <path
+        android:pathData="M54,54m-23.5,0a23.5,23.5,0,1,1,47,0a23.5,23.5,0,1,1,-47,0"
+        android:strokeWidth="0.7"
+        android:strokeColor="#33666670"
+        android:fillColor="#00000000" />
+
+    <!-- Amber-to-red gradient ring (warm glow around the eye) -->
+    <path android:pathData="M54,54m-21,0a21,21,0,1,1,42,0a21,21,0,1,1,-42,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="21">
+                <item android:offset="0" android:color="#FFDD0000" />
+                <item android:offset="0.4" android:color="#FFCC0000" />
+                <item android:offset="0.65" android:color="#FFEE4400" />
+                <item android:offset="0.82" android:color="#FFFF6600" />
+                <item android:offset="1" android:color="#FF441000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner eye — red core -->
+    <path android:pathData="M54,54m-12.5,0a12.5,12.5,0,1,1,25,0a12.5,12.5,0,1,1,-25,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="53"
+                android:gradientRadius="13">
+                <item android:offset="0" android:color="#FFFF4433" />
+                <item android:offset="0.5" android:color="#FFDD0000" />
+                <item android:offset="1" android:color="#FFAA0000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Primary lens highlight (top-left specular) -->
+    <path android:pathData="M50.2,49.5m-3.8,0a3.8,3.8,0,1,1,7.6,0a3.8,3.8,0,1,1,-7.6,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="50.2"
+                android:centerY="49.5"
+                android:gradientRadius="3.8">
+                <item android:offset="0" android:color="#99FFFFFF" />
+                <item android:offset="0.5" android:color="#33FFFFFF" />
+                <item android:offset="1" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Secondary lens highlight (bottom-right, small) -->
+    <path android:pathData="M57.5,57.5m-1.8,0a1.8,1.8,0,1,1,3.6,0a1.8,1.8,0,1,1,-3.6,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="57.5"
+                android:centerY="57.5"
+                android:gradientRadius="1.8">
+                <item android:offset="0" android:color="#44FFFFFF" />
+                <item android:offset="1" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>
