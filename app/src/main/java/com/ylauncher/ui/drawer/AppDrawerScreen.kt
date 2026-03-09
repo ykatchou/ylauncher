@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
@@ -28,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -41,8 +43,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
+import com.ylauncher.ui.components.AlphabetSidebar
 import com.ylauncher.util.AppLauncher
 import com.ylauncher.util.openSearch
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppDrawerScreen(
@@ -58,6 +62,8 @@ fun AppDrawerScreen(
     val filteredApps by viewModel.filteredApps.collectAsState()
     val autoShowKeyboard by viewModel.autoShowKeyboard.collectAsState()
     val listState = rememberLazyListState()
+
+    val scope = rememberCoroutineScope()
 
     // Auto-launch when single match
     LaunchedEffect(filteredApps, searchQuery) {
@@ -133,33 +139,55 @@ fun AppDrawerScreen(
                 ),
             )
 
-            // App list
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-            ) {
-                items(
-                    items = filteredApps,
-                    key = { "${it.packageName}|${it.userHandle}" },
-                ) { app ->
-                    AppDrawerItem(
-                        app = app,
-                        onClick = {
-                            keyboardController?.hide()
-                            if (onAppSelected != null) {
-                                onAppSelected(app)
-                            } else {
-                                AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
-                            }
-                            onDismiss()
-                        },
-                        onLongClick = {
-                            // Will be expanded with context menu later
-                        },
-                    )
+            // App list + alphabet sidebar
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 16.dp, end = 32.dp),
+                ) {
+                    items(
+                        items = filteredApps,
+                        key = { "${it.packageName}|${it.userHandle}" },
+                    ) { app ->
+                        AppDrawerItem(
+                            app = app,
+                            onClick = {
+                                keyboardController?.hide()
+                                if (onAppSelected != null) {
+                                    onAppSelected(app)
+                                } else {
+                                    AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                }
+                                onDismiss()
+                            },
+                            onLongClick = {
+                                // Will be expanded with context menu later
+                            },
+                        )
+                    }
                 }
+
+                // Alphabet quick-access sidebar
+                AlphabetSidebar(
+                    onLetterSelected = { letter ->
+                        keyboardController?.hide()
+                        val index = if (letter == '#') {
+                            filteredApps.indexOfFirst { !it.appLabel.first().isLetter() }
+                        } else {
+                            filteredApps.indexOfFirst {
+                                it.appLabel.firstOrNull()?.uppercaseChar() == letter
+                            }
+                        }
+                        if (index >= 0) {
+                            scope.launch { listState.scrollToItem(index) }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 2.dp),
+                )
             }
         }
     }

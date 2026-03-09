@@ -8,6 +8,10 @@ val HalRedBright = Color(0xFFFF2222)
 val HalAmber = Color(0xFFFF6600)
 val HalBezel = Color(0xFF2A2A2E)
 
+// Home screen text (renders over wallpaper — always white with shadow)
+val HomeTextColor = Color.White
+val HomeTextColorDim = Color(0xBBFFFFFF) // 73% white
+
 // Light theme
 val LightBackground = Color(0xFFFFFBFF)
 val LightOnBackground = Color(0xFF1C1B1E)

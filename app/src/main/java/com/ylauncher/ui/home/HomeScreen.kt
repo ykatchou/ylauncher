@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.repository.AppRepository
+import com.ylauncher.service.NotificationService
 import com.ylauncher.ui.components.AllAppsButton
 import com.ylauncher.ui.components.ClockWidget
 import com.ylauncher.ui.drawer.AppDrawerScreen
@@ -66,6 +67,7 @@ fun HomeScreen(
     val swipeLeftActivity by viewModel.swipeLeftActivity.collectAsState()
     val swipeRightActivity by viewModel.swipeRightActivity.collectAsState()
     val halAssistantPackage by viewModel.halAssistantPackage.collectAsState()
+    val notifications by NotificationService.notifications.collectAsState()
 
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
@@ -171,6 +173,7 @@ fun HomeScreen(
                                     favorite.activityClassName,
                                 )
                             },
+                            notification = notifications[favorite.packageName],
                         )
                     }
                 }
