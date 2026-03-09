@@ -2,36 +2,46 @@ package com.ylauncher
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.ylauncher.data.repository.AppRepository
+import com.ylauncher.ui.about.AboutScreen
+import com.ylauncher.ui.home.HomeScreen
 import com.ylauncher.ui.theme.YLauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var appRepository: AppRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             YLauncherTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                val navController = rememberNavController()
+
+                NavHost(
+                    navController = navController,
+                    startDestination = "home",
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "yLauncher",
-                            style = MaterialTheme.typography.displayLarge
+                    composable("home") {
+                        // Disable back on home — we ARE the launcher
+                        BackHandler { }
+                        HomeScreen(
+                            onNavigateToAbout = { navController.navigate("about") },
+                            appRepository = appRepository,
+                        )
+                    }
+                    composable("about") {
+                        AboutScreen(
+                            onBack = { navController.popBackStack() },
                         )
                     }
                 }
