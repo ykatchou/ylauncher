@@ -49,6 +49,7 @@ fun FavoriteItem(
     onEditFavorites: (() -> Unit)? = null,
     onEditFolder: (() -> Unit)? = null,
     onMoveToFolder: (() -> Unit)? = null,
+    onMoveToPanel: (() -> Unit)? = null,
     onAppInfo: (() -> Unit)? = null,
     onUninstall: (() -> Unit)? = null,
 ) {
@@ -138,6 +139,12 @@ fun FavoriteItem(
                 DropdownMenuItem(
                     text = { Text("Move to folder") },
                     onClick = { showMenu = false; onMoveToFolder() },
+                )
+            }
+            if (onMoveToPanel != null) {
+                DropdownMenuItem(
+                    text = { Text("Move to panel…") },
+                    onClick = { showMenu = false; onMoveToPanel() },
                 )
             }
             if (onEditFavorites != null) {

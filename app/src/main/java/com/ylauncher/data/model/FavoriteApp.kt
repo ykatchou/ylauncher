@@ -13,6 +13,7 @@ data class FavoriteApp(
     val userHandleString: String = "",
     val folderId: Long? = null,
     val iconEmoji: String? = null,
+    val panelId: Int = 0,
 ) {
     val isFolder: Boolean get() = folderId != null
 }

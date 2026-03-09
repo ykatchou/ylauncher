@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -56,11 +58,13 @@ fun SettingsScreen(
     val textSizeScale by prefsRepository.textSizeScale.collectAsState(initial = 1f)
     val suggestionCount by prefsRepository.suggestionCount.collectAsState(initial = 3)
     val recentAppsCount by prefsRepository.recentAppsCount.collectAsState(initial = 0)
+    val panelNames by prefsRepository.panelNames.collectAsState(initial = listOf("Perso", "Pro"))
 
     // Local state for sliders to avoid excessive DataStore writes during drag
     var sliderValue by remember(textSizeScale) { mutableFloatStateOf(textSizeScale) }
     var suggestionSlider by remember(suggestionCount) { mutableFloatStateOf(suggestionCount.toFloat()) }
     var recentSlider by remember(recentAppsCount) { mutableFloatStateOf(recentAppsCount.toFloat()) }
+    var panelNamesText by remember(panelNames) { mutableStateOf(panelNames.joinToString(", ")) }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -168,6 +172,48 @@ fun SettingsScreen(
                     },
                     valueRange = 0f..8f,
                     steps = 7,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Panels")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = "Panel names",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = "Comma-separated list (e.g. Perso, Pro)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = panelNamesText,
+                    onValueChange = { panelNamesText = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Save",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable {
+                            val names = panelNamesText.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                            if (names.isNotEmpty()) {
+                                scope.launch { prefsRepository.setPanelNames(names) }
+                            }
+                        }
+                        .padding(vertical = 8.dp),
                 )
             }
 

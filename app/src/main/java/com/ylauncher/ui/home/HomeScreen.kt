@@ -56,6 +56,9 @@ import com.ylauncher.ui.components.AllAppsButton
 import com.ylauncher.ui.components.ClockWidget
 import com.ylauncher.ui.drawer.AppDrawerScreen
 import com.ylauncher.ui.hal.HalButton
+import com.ylauncher.ui.theme.HomeTextColor
+import com.ylauncher.ui.theme.HomeTextColorDim
+import com.ylauncher.ui.theme.WallpaperTextShadow
 import com.ylauncher.util.AppLauncher
 import com.ylauncher.util.expandNotificationDrawer
 import com.ylauncher.util.openAppInfo
@@ -86,6 +89,8 @@ fun HomeScreen(
     val swipeRightActivity by viewModel.swipeRightActivity.collectAsState()
     val halAssistantPackage by viewModel.halAssistantPackage.collectAsState()
     val notifications by NotificationService.notifications.collectAsState()
+    val activePanel by viewModel.activePanel.collectAsState()
+    val panelNames by viewModel.panelNames.collectAsState()
 
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
@@ -100,6 +105,7 @@ fun HomeScreen(
     var editingFolderId by remember { mutableStateOf<Long?>(null) }
     var addingAppToFolderId by remember { mutableStateOf<Long?>(null) }
     var movingFavorite by remember { mutableStateOf<FavoriteApp?>(null) }
+    var movingFavoriteToPanel by remember { mutableStateOf<FavoriteApp?>(null) }
     val allFolders by viewModel.getAllFolders().collectAsState(initial = emptyList())
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -233,6 +239,9 @@ fun HomeScreen(
                                     onClick = { openFolderId = favorite.folderId },
                                     onEditFavorites = { showEditFavorites = true },
                                     onEditFolder = { editingFolderId = favorite.folderId },
+                                    onMoveToPanel = if (panelNames.size > 1) {
+                                        { movingFavoriteToPanel = favorite }
+                                    } else null,
                                 )
                             } else {
                                 // Regular app item
@@ -253,6 +262,9 @@ fun HomeScreen(
                                     onEditFavorites = { showEditFavorites = true },
                                     onMoveToFolder = if (allFolders.isNotEmpty()) {
                                         { movingFavorite = favorite }
+                                    } else null,
+                                    onMoveToPanel = if (panelNames.size > 1) {
+                                        { movingFavoriteToPanel = favorite }
                                     } else null,
                                     onAppInfo = { context.openAppInfo(favorite.packageName) },
                                     onUninstall = { context.uninstallApp(favorite.packageName) },
@@ -294,7 +306,7 @@ fun HomeScreen(
                     }
                 }
 
-                // Bottom bar: HAL button (center) + All Apps (right)
+                // Bottom bar: Panel switcher (left) + HAL button (center) + All Apps (right)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -302,7 +314,29 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Spacer(modifier = Modifier.weight(1f))
+                    // Panel radio buttons
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        panelNames.forEachIndexed { index, name ->
+                            val isActive = index == activePanel
+                            Text(
+                                text = if (isActive) "● $name" else "○ $name",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    shadow = WallpaperTextShadow,
+                                ),
+                                color = if (isActive) HomeTextColor else HomeTextColorDim,
+                                modifier = Modifier
+                                    .clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                    ) { viewModel.switchPanel(index) }
+                                    .padding(end = 10.dp, top = 4.dp, bottom = 4.dp),
+                            )
+                        }
+                    }
 
                     Box {
                         HalButton(
@@ -537,6 +571,19 @@ fun HomeScreen(
                     movingFavorite = null
                 },
                 onDismiss = { movingFavorite = null },
+            )
+        }
+
+        // Panel picker for "Move to panel"
+        if (movingFavoriteToPanel != null) {
+            PanelPickerDialog(
+                panelNames = panelNames,
+                currentPanelId = activePanel,
+                onPanelSelected = { targetPanel ->
+                    viewModel.moveFavoriteToPanel(movingFavoriteToPanel!!, targetPanel)
+                    movingFavoriteToPanel = null
+                },
+                onDismiss = { movingFavoriteToPanel = null },
             )
         }
     }

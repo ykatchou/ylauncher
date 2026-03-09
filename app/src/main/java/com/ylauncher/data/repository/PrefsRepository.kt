@@ -43,6 +43,8 @@ class PrefsRepository @Inject constructor(
         val LEFT_HAND_MODE = booleanPreferencesKey("left_hand_mode")
         val SUGGESTION_COUNT = intPreferencesKey("suggestion_count")
         val RECENT_APPS_COUNT = intPreferencesKey("recent_apps_count")
+        val ACTIVE_PANEL = intPreferencesKey("active_panel")
+        val PANEL_NAMES = stringPreferencesKey("panel_names")
     }
 
     val isFirstLaunch: Flow<Boolean> = dataStore.data.map { it[FIRST_LAUNCH] ?: true }
@@ -70,6 +72,10 @@ class PrefsRepository @Inject constructor(
 
     val suggestionCount: Flow<Int> = dataStore.data.map { it[SUGGESTION_COUNT] ?: 3 }
     val recentAppsCount: Flow<Int> = dataStore.data.map { it[RECENT_APPS_COUNT] ?: 0 }
+    val activePanel: Flow<Int> = dataStore.data.map { it[ACTIVE_PANEL] ?: 0 }
+    val panelNames: Flow<List<String>> = dataStore.data.map { prefs ->
+        prefs[PANEL_NAMES]?.split("|")?.filter { it.isNotBlank() } ?: listOf("Perso", "Pro")
+    }
 
     suspend fun setFirstLaunchDone() {
         dataStore.edit { it[FIRST_LAUNCH] = false }
@@ -129,5 +135,13 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setRecentAppsCount(count: Int) {
         dataStore.edit { it[RECENT_APPS_COUNT] = count }
+    }
+
+    suspend fun setActivePanel(panelId: Int) {
+        dataStore.edit { it[ACTIVE_PANEL] = panelId }
+    }
+
+    suspend fun setPanelNames(names: List<String>) {
+        dataStore.edit { it[PANEL_NAMES] = names.joinToString("|") }
     }
 }

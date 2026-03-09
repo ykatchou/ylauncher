@@ -33,11 +33,26 @@ class HomeViewModel @Inject constructor(
     private val prefsRepository: PrefsRepository,
 ) : ViewModel() {
 
-    val favorites = favoriteDao.getAllFavorites()
+    // All favorites (unfiltered, used by suggestions/recent to exclude all fav packages)
+    private val allFavorites = favoriteDao.getAllFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Panel state
+    val activePanel = prefsRepository.activePanel
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val panelNames = prefsRepository.panelNames
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Perso", "Pro"))
+
+    // Favorites filtered by active panel
+    val favorites: StateFlow<List<FavoriteApp>> = combine(
+        allFavorites,
+        prefsRepository.activePanel,
+    ) { favs, panel ->
+        favs.filter { it.panelId == panel }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val suggestedApps: StateFlow<List<AppInfo>> = combine(
-        favorites,
+        allFavorites,
         appRepository.appList,
         prefsRepository.suggestionCount,
     ) { favs, _, count ->
@@ -48,14 +63,13 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentApps: StateFlow<List<AppInfo>> = combine(
-        favorites,
+        allFavorites,
         appRepository.appList,
         prefsRepository.recentAppsCount,
         prefsRepository.suggestionCount,
     ) { favs, _, recentCount, suggCount ->
         if (recentCount == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
-        // Also exclude suggested apps to avoid duplicates
         val suggested = if (suggCount > 0) {
             UsageStatsHelper.getTopApps(context, appRepository, count = suggCount + 10)
                 .filter { it.packageName !in favPackages }
@@ -178,8 +192,24 @@ class HomeViewModel @Inject constructor(
 
     fun saveFavorites(favorites: List<FavoriteApp>) {
         viewModelScope.launch {
-            favoriteDao.deleteAll()
-            favoriteDao.insertAll(favorites)
+            val panelId = activePanel.value
+            favoriteDao.deleteByPanel(panelId)
+            favoriteDao.insertAll(favorites.map { it.copy(panelId = panelId) })
+        }
+    }
+
+    // Panel operations
+
+    fun switchPanel(panelId: Int) {
+        viewModelScope.launch { prefsRepository.setActivePanel(panelId) }
+    }
+
+    fun moveFavoriteToPanel(favorite: FavoriteApp, targetPanelId: Int) {
+        viewModelScope.launch {
+            val targetFavs = favoriteDao.getAllFavoritesOnce().filter { it.panelId == targetPanelId }
+            val nextPosition = (targetFavs.maxOfOrNull { it.position } ?: -1) + 1
+            favoriteDao.deleteFavoriteAt(favorite.position)
+            favoriteDao.insertFavorite(favorite.copy(position = nextPosition, panelId = targetPanelId))
         }
     }
 
@@ -187,6 +217,7 @@ class HomeViewModel @Inject constructor(
 
     fun createFolder(name: String = "New Folder", emoji: String = "📁") {
         viewModelScope.launch {
+            val panelId = activePanel.value
             val currentFavs = favoriteDao.getAllFavoritesOnce()
             val nextPosition = (currentFavs.maxOfOrNull { it.position } ?: -1) + 1
             val folderId = folderDao.insertFolder(Folder(name = name, position = nextPosition, iconEmoji = emoji))
@@ -197,6 +228,7 @@ class HomeViewModel @Inject constructor(
                     displayName = name,
                     folderId = folderId,
                     iconEmoji = emoji,
+                    panelId = panelId,
                 )
             )
         }

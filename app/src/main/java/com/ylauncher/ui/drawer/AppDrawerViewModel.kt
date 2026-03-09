@@ -72,6 +72,7 @@ class AppDrawerViewModel @Inject constructor(
 
     fun addToHome(app: AppInfo) {
         viewModelScope.launch {
+            val panelId = prefsRepository.activePanel.first()
             val currentFavs = favoriteDao.getAllFavoritesOnce()
             val nextPosition = (currentFavs.maxOfOrNull { it.position } ?: -1) + 1
             favoriteDao.insertFavorite(
@@ -81,6 +82,7 @@ class AppDrawerViewModel @Inject constructor(
                     activityClassName = app.activityClassName,
                     displayName = app.appLabel,
                     userHandleString = app.userHandle.toString(),
+                    panelId = panelId,
                 )
             )
         }
