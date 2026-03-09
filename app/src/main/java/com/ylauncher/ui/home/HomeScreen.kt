@@ -23,8 +23,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,6 +65,7 @@ private const val SWIPE_THRESHOLD = 100f
 @Composable
 fun HomeScreen(
     onNavigateToAbout: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     appRepository: AppRepository,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -81,6 +85,7 @@ fun HomeScreen(
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
     var showEditFavorites by remember { mutableStateOf(false) }
+    var showHalMenu by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Main home content with swipe detection
@@ -93,8 +98,7 @@ fun HomeScreen(
                             totalDragX = 0f
                             totalDragY = 0f
                         },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
+                        onDrag = { _, dragAmount ->
                             totalDragX += dragAmount.x
                             totalDragY += dragAmount.y
                         },
@@ -247,14 +251,41 @@ fun HomeScreen(
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
 
-                    HalButton(
-                        onClick = {
-                            if (halAssistantPackage.isNotBlank()) {
-                                AppLauncher.launch(context, halAssistantPackage)
-                            }
-                        },
-                        onLongClick = onNavigateToAbout,
-                    )
+                    Box {
+                        HalButton(
+                            onClick = {
+                                if (halAssistantPackage.isNotBlank()) {
+                                    AppLauncher.launch(context, halAssistantPackage)
+                                }
+                            },
+                            onLongClick = { showHalMenu = true },
+                        )
+
+                        DropdownMenu(
+                            expanded = showHalMenu,
+                            onDismissRequest = { showHalMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Settings") },
+                                onClick = { showHalMenu = false; onNavigateToSettings() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("About") },
+                                onClick = { showHalMenu = false; onNavigateToAbout() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Reimport favorites") },
+                                onClick = {
+                                    showHalMenu = false
+                                    if (viewModel.hasUsageStatsPermission()) {
+                                        viewModel.reimportFromUsageStats()
+                                    } else {
+                                        viewModel.requestUsageStatsPermission()
+                                    }
+                                },
+                            )
+                        }
+                    }
 
                     Box(
                         modifier = Modifier.weight(1f),

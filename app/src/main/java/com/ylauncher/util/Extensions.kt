@@ -3,7 +3,6 @@ package com.ylauncher.util
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.MediaStore
 import android.widget.Toast
 import java.lang.reflect.Method
 
@@ -19,8 +18,9 @@ fun Context.openDialerApp() {
 
 fun Context.openCameraApp() {
     try {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val intent = Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         startActivity(intent)
     } catch (e: Exception) {
         showToast("No camera app found")

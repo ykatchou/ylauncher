@@ -2,7 +2,6 @@ package com.ylauncher.ui.home
 
 import android.content.Context
 import android.content.Intent
-import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ylauncher.data.db.FavoriteDao
@@ -108,7 +107,7 @@ class HomeViewModel @Inject constructor(
             defaults.add(FavoriteApp(position++, it.packageName, it.activityClassName, "Browser", it.userHandle.toString()))
         }
         // Camera
-        appRepository.resolveDefaultApp(Intent(MediaStore.ACTION_IMAGE_CAPTURE))?.let {
+        appRepository.resolveDefaultApp(Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))?.let {
             defaults.add(FavoriteApp(position++, it.packageName, it.activityClassName, "Camera", it.userHandle.toString()))
         }
         // Gallery

@@ -14,6 +14,7 @@ import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.data.repository.PrefsRepository
 import com.ylauncher.ui.about.AboutScreen
 import com.ylauncher.ui.home.HomeScreen
+import com.ylauncher.ui.settings.SettingsScreen
 import com.ylauncher.ui.theme.YLauncherTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -41,11 +42,18 @@ class MainActivity : ComponentActivity() {
                         BackHandler { }
                         HomeScreen(
                             onNavigateToAbout = { navController.navigate("about") },
+                            onNavigateToSettings = { navController.navigate("settings") },
                             appRepository = appRepository,
                         )
                     }
                     composable("about") {
                         AboutScreen(
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                    composable("settings") {
+                        SettingsScreen(
+                            prefsRepository = prefsRepository,
                             onBack = { navController.popBackStack() },
                         )
                     }

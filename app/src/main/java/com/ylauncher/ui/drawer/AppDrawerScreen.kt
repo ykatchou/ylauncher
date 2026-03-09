@@ -1,5 +1,6 @@
 package com.ylauncher.ui.drawer
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -19,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,8 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -45,7 +50,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
 import com.ylauncher.ui.components.AlphabetSidebar
 import com.ylauncher.util.AppLauncher
+import com.ylauncher.util.openAppInfo
 import com.ylauncher.util.openSearch
+import com.ylauncher.util.uninstallApp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,6 +72,8 @@ fun AppDrawerScreen(
     val listState = rememberLazyListState()
 
     val scope = rememberCoroutineScope()
+
+    BackHandler { onDismiss() }
 
     // Auto-launch when single match
     LaunchedEffect(filteredApps, searchQuery) {
@@ -166,9 +175,8 @@ fun AppDrawerScreen(
                                 }
                                 onDismiss()
                             },
-                            onLongClick = {
-                                // Will be expanded with context menu later
-                            },
+                            onAppInfo = { context.openAppInfo(app.packageName) },
+                            onUninstall = { context.uninstallApp(app.packageName) },
                         )
                     }
                 }
@@ -185,7 +193,7 @@ fun AppDrawerScreen(
                             }
                         }
                         if (index >= 0) {
-                            scope.launch { listState.scrollToItem(index) }
+                            scope.launch { listState.animateScrollToItem(index) }
                         }
                     },
                     modifier = Modifier
@@ -205,15 +213,18 @@ fun AppDrawerScreen(
 fun AppDrawerItem(
     app: AppInfo,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onAppInfo: (() -> Unit)? = null,
+    onUninstall: (() -> Unit)? = null,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick,
+                onLongClick = { showMenu = true },
             )
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -236,5 +247,23 @@ fun AppDrawerItem(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            if (onAppInfo != null) {
+                DropdownMenuItem(
+                    text = { Text("App info") },
+                    onClick = { showMenu = false; onAppInfo() },
+                )
+            }
+            if (onUninstall != null) {
+                DropdownMenuItem(
+                    text = { Text("Uninstall") },
+                    onClick = { showMenu = false; onUninstall() },
+                )
+            }
+        }
     }
 }
