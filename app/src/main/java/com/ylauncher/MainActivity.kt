@@ -8,7 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.ylauncher.data.repository.AppRepository
+import com.ylauncher.data.repository.PrefsRepository
 import com.ylauncher.ui.about.AboutScreen
 import com.ylauncher.ui.home.HomeScreen
 import com.ylauncher.ui.theme.YLauncherTheme
@@ -19,12 +22,14 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var appRepository: AppRepository
+    @Inject lateinit var prefsRepository: PrefsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            YLauncherTheme {
+            val fontScale by prefsRepository.textSizeScale.collectAsState(initial = 1f)
+            YLauncherTheme(fontScale = fontScale) {
                 val navController = rememberNavController()
 
                 NavHost(

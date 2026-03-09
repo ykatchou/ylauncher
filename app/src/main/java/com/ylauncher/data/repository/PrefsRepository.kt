@@ -40,6 +40,7 @@ class PrefsRepository @Inject constructor(
         val TEXT_SIZE_SCALE = intPreferencesKey("text_size_scale")
         val HAL_ASSISTANT_PACKAGE = stringPreferencesKey("hal_assistant_package")
         val HIDDEN_APPS = stringPreferencesKey("hidden_apps")
+        val LEFT_HAND_MODE = booleanPreferencesKey("left_hand_mode")
     }
 
     val isFirstLaunch: Flow<Boolean> = dataStore.data.map { it[FIRST_LAUNCH] ?: true }
@@ -58,6 +59,12 @@ class PrefsRepository @Inject constructor(
     val hiddenApps: Flow<Set<String>> = dataStore.data.map { prefs ->
         prefs[HIDDEN_APPS]?.split("|")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
     }
+
+    val textSizeScale: Flow<Float> = dataStore.data.map { prefs ->
+        (prefs[TEXT_SIZE_SCALE] ?: 100) / 100f  // stored as int 80-140, returned as 0.8-1.4
+    }
+
+    val leftHandMode: Flow<Boolean> = dataStore.data.map { it[LEFT_HAND_MODE] ?: false }
 
     suspend fun setFirstLaunchDone() {
         dataStore.edit { it[FIRST_LAUNCH] = false }
@@ -101,5 +108,13 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setHiddenApps(apps: Set<String>) {
         dataStore.edit { it[HIDDEN_APPS] = apps.joinToString("|") }
+    }
+
+    suspend fun setTextSizeScale(scale: Int) {
+        dataStore.edit { it[TEXT_SIZE_SCALE] = scale }
+    }
+
+    suspend fun setLeftHandMode(enabled: Boolean) {
+        dataStore.edit { it[LEFT_HAND_MODE] = enabled }
     }
 }

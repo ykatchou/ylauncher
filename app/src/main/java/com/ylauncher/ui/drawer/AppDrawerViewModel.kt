@@ -26,6 +26,9 @@ class AppDrawerViewModel @Inject constructor(
     val autoShowKeyboard = prefsRepository.autoShowKeyboard
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val leftHandMode = prefsRepository.leftHandMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val filteredApps: StateFlow<List<AppInfo>> = combine(
         appRepository.appList,
         _searchQuery,

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +32,15 @@ class HomeViewModel @Inject constructor(
 
     val favorites = favoriteDao.getAllFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val suggestedApps: StateFlow<List<AppInfo>> = combine(
+        favorites,
+        appRepository.appList,
+    ) { favs, allApps ->
+        val favPackages = favs.map { it.packageName }.toSet()
+        val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = 12)
+        topApps.filter { it.packageName !in favPackages }.take(3)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val showClock = prefsRepository.showClock
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -135,6 +145,13 @@ class HomeViewModel @Inject constructor(
 
     fun openDrawer() { _isDrawerOpen.value = true }
     fun closeDrawer() { _isDrawerOpen.value = false }
+
+    fun saveFavorites(favorites: List<FavoriteApp>) {
+        viewModelScope.launch {
+            favoriteDao.deleteAll()
+            favoriteDao.insertAll(favorites)
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()

@@ -61,6 +61,7 @@ fun AppDrawerScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredApps by viewModel.filteredApps.collectAsState()
     val autoShowKeyboard by viewModel.autoShowKeyboard.collectAsState()
+    val leftHandMode by viewModel.leftHandMode.collectAsState()
     val listState = rememberLazyListState()
 
     val scope = rememberCoroutineScope()
@@ -145,7 +146,10 @@ fun AppDrawerScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 16.dp, end = 32.dp),
+                        .padding(
+                            start = if (leftHandMode) 32.dp else 16.dp,
+                            end = if (leftHandMode) 16.dp else 32.dp,
+                        ),
                 ) {
                     items(
                         items = filteredApps,
@@ -185,8 +189,11 @@ fun AppDrawerScreen(
                         }
                     },
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 2.dp),
+                        .align(if (leftHandMode) Alignment.CenterStart else Alignment.CenterEnd)
+                        .padding(
+                            start = if (leftHandMode) 2.dp else 0.dp,
+                            end = if (leftHandMode) 0.dp else 2.dp,
+                        ),
                 )
             }
         }

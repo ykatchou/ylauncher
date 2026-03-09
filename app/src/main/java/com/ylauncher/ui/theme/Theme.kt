@@ -36,6 +36,7 @@ private val DarkColorScheme = darkColorScheme(
 fun YLauncherTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    fontScale: Float = 1f,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -47,9 +48,29 @@ fun YLauncherTheme(
         else -> LightColorScheme
     }
 
+    val scaledTypography = if (fontScale != 1f) {
+        YLauncherTypography.copy(
+            displayLarge = YLauncherTypography.displayLarge.copy(fontSize = YLauncherTypography.displayLarge.fontSize * fontScale),
+            displayMedium = YLauncherTypography.displayMedium.copy(fontSize = YLauncherTypography.displayMedium.fontSize * fontScale),
+            headlineLarge = YLauncherTypography.headlineLarge.copy(fontSize = YLauncherTypography.headlineLarge.fontSize * fontScale),
+            headlineMedium = YLauncherTypography.headlineMedium.copy(fontSize = YLauncherTypography.headlineMedium.fontSize * fontScale),
+            headlineSmall = YLauncherTypography.headlineSmall.copy(fontSize = YLauncherTypography.headlineSmall.fontSize * fontScale),
+            titleLarge = YLauncherTypography.titleLarge.copy(fontSize = YLauncherTypography.titleLarge.fontSize * fontScale),
+            titleMedium = YLauncherTypography.titleMedium.copy(fontSize = YLauncherTypography.titleMedium.fontSize * fontScale),
+            bodyLarge = YLauncherTypography.bodyLarge.copy(fontSize = YLauncherTypography.bodyLarge.fontSize * fontScale),
+            bodyMedium = YLauncherTypography.bodyMedium.copy(fontSize = YLauncherTypography.bodyMedium.fontSize * fontScale),
+            bodySmall = YLauncherTypography.bodySmall.copy(fontSize = YLauncherTypography.bodySmall.fontSize * fontScale),
+            labelLarge = YLauncherTypography.labelLarge.copy(fontSize = YLauncherTypography.labelLarge.fontSize * fontScale),
+            labelMedium = YLauncherTypography.labelMedium.copy(fontSize = YLauncherTypography.labelMedium.fontSize * fontScale),
+            labelSmall = YLauncherTypography.labelSmall.copy(fontSize = YLauncherTypography.labelSmall.fontSize * fontScale),
+        )
+    } else {
+        YLauncherTypography
+    }
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = YLauncherTypography,
+        typography = scaledTypography,
         content = content,
     )
 }

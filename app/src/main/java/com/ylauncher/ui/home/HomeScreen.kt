@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -27,10 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -38,14 +44,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.service.NotificationService
+import com.ylauncher.service.ScreenLockService
 import com.ylauncher.ui.components.AllAppsButton
 import com.ylauncher.ui.components.ClockWidget
 import com.ylauncher.ui.drawer.AppDrawerScreen
 import com.ylauncher.ui.hal.HalButton
 import com.ylauncher.util.AppLauncher
 import com.ylauncher.util.expandNotificationDrawer
+import com.ylauncher.util.openAppInfo
 import com.ylauncher.util.openCameraApp
 import com.ylauncher.util.openDialerApp
+import com.ylauncher.util.uninstallApp
 import kotlin.math.abs
 
 private const val SWIPE_THRESHOLD = 100f
@@ -71,6 +80,7 @@ fun HomeScreen(
 
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
+    var showEditFavorites by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Main home content with swipe detection
@@ -120,6 +130,13 @@ fun HomeScreen(
                             }
                         },
                     )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            ScreenLockService.instance?.lockScreen()
+                        },
+                    )
                 },
             color = androidx.compose.ui.graphics.Color.Transparent,
         ) {
@@ -154,27 +171,69 @@ fun HomeScreen(
                     )
                 }
 
-                // Middle: Favorites list
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center,
+                // Middle: Favorites list with subtle scrim
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                 ) {
-                    favorites.forEach { favorite ->
-                        val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
-                            appRepository.findAppByPackage(favorite.packageName)
-                        }
-                        FavoriteItem(
-                            appInfo = appInfo,
-                            displayName = favorite.displayName,
-                            onClick = {
-                                AppLauncher.launch(
-                                    context,
-                                    favorite.packageName,
-                                    favorite.activityClassName,
+                    // Subtle gradient scrim for readability
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.15f),
+                                        Color.Black.copy(alpha = 0.25f),
+                                        Color.Black.copy(alpha = 0.15f),
+                                        Color.Transparent,
+                                    ),
                                 )
-                            },
-                            notification = notifications[favorite.packageName],
-                        )
+                            )
+                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        favorites.forEach { favorite ->
+                            val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
+                                appRepository.findAppByPackage(favorite.packageName)
+                            }
+                            FavoriteItem(
+                                appInfo = appInfo,
+                                displayName = favorite.displayName,
+                                onClick = {
+                                    AppLauncher.launch(
+                                        context,
+                                        favorite.packageName,
+                                        favorite.activityClassName,
+                                    )
+                                },
+                                notification = notifications[favorite.packageName],
+                                onEditFavorites = { showEditFavorites = true },
+                                onAppInfo = { context.openAppInfo(favorite.packageName) },
+                                onUninstall = { context.uninstallApp(favorite.packageName) },
+                            )
+                        }
+
+                        // App suggestions (most-used non-favorites)
+                        val suggestedApps by viewModel.suggestedApps.collectAsState()
+                        if (suggestedApps.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            suggestedApps.forEach { app ->
+                                FavoriteItem(
+                                    appInfo = app,
+                                    displayName = app.appLabel,
+                                    onClick = {
+                                        AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                    },
+                                    // suggestions are slightly dimmer
+                                    modifier = Modifier.alpha(0.6f),
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -214,6 +273,29 @@ fun HomeScreen(
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         ) {
             AppDrawerScreen(onDismiss = { viewModel.closeDrawer() })
+        }
+
+        // Edit favorites overlay
+        if (showEditFavorites) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable { showEditFavorites = false },
+                contentAlignment = Alignment.Center,
+            ) {
+                EditFavoritesSheet(
+                    favorites = favorites,
+                    onSave = { reordered ->
+                        viewModel.saveFavorites(reordered)
+                        showEditFavorites = false
+                    },
+                    onDismiss = { showEditFavorites = false },
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(16.dp),
+                )
+            }
         }
     }
 }
