@@ -153,7 +153,7 @@ fun AppDrawerScreen(
                 ) {
                     items(
                         items = filteredApps,
-                        key = { "${it.packageName}|${it.userHandle}" },
+                        key = { "${it.packageName}|${it.activityClassName}|${it.userHandle}" },
                     ) { app ->
                         AppDrawerItem(
                             app = app,

@@ -61,8 +61,11 @@ class AppRepository @Inject constructor(
                 )
             }
         }
-        apps.sort()
-        _appList.value = apps
+        // Deduplicate: keep first activity per package per user profile
+        val deduped = apps
+            .distinctBy { "${it.packageName}|${it.userHandle}" }
+        val sorted = deduped.sorted()
+        _appList.value = sorted
     }
 
     suspend fun getAppList(): List<AppInfo> = withContext(Dispatchers.IO) {
