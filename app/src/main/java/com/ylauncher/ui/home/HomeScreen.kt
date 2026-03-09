@@ -119,7 +119,7 @@ fun HomeScreen(
                         },
                     )
                 },
-            color = MaterialTheme.colorScheme.background,
+            color = androidx.compose.ui.graphics.Color.Transparent,
         ) {
             Column(
                 modifier = Modifier

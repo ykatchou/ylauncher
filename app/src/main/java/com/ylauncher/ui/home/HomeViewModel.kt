@@ -10,6 +10,7 @@ import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.model.FavoriteApp
 import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.data.repository.PrefsRepository
+import com.ylauncher.util.UsageStatsHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +70,18 @@ class HomeViewModel @Inject constructor(
     private suspend fun autoPopulateFavoritesIfNeeded() {
         if (favoriteDao.count() > 0) return
 
+        // Try usage stats first (imports your real most-used apps)
+        val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = 6)
+        if (topApps.isNotEmpty()) {
+            val favorites = topApps.mapIndexed { index, app ->
+                FavoriteApp(index, app.packageName, app.activityClassName, app.appLabel, app.userHandle.toString())
+            }
+            favoriteDao.insertAll(favorites)
+            prefsRepository.setFirstLaunchDone()
+            return
+        }
+
+        // Fallback: resolve default apps by intent category
         val defaults = mutableListOf<FavoriteApp>()
         var position = 0
 
@@ -88,7 +101,7 @@ class HomeViewModel @Inject constructor(
         appRepository.resolveDefaultApp(Intent(MediaStore.ACTION_IMAGE_CAPTURE))?.let {
             defaults.add(FavoriteApp(position++, it.packageName, it.activityClassName, "Camera", it.userHandle.toString()))
         }
-        // Gallery - try common gallery intents
+        // Gallery
         appRepository.resolveDefaultApp(Intent(Intent.ACTION_VIEW).apply { type = "image/*" })?.let {
             defaults.add(FavoriteApp(position++, it.packageName, it.activityClassName, "Gallery", it.userHandle.toString()))
         }
@@ -102,6 +115,23 @@ class HomeViewModel @Inject constructor(
         }
         prefsRepository.setFirstLaunchDone()
     }
+
+    fun reimportFromUsageStats() {
+        viewModelScope.launch {
+            val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = 6)
+            if (topApps.isNotEmpty()) {
+                favoriteDao.deleteAll()
+                val favorites = topApps.mapIndexed { index, app ->
+                    FavoriteApp(index, app.packageName, app.activityClassName, app.appLabel, app.userHandle.toString())
+                }
+                favoriteDao.insertAll(favorites)
+            }
+        }
+    }
+
+    fun hasUsageStatsPermission(): Boolean = UsageStatsHelper.hasPermission(context)
+
+    fun requestUsageStatsPermission() = UsageStatsHelper.requestPermission(context)
 
     fun openDrawer() { _isDrawerOpen.value = true }
     fun closeDrawer() { _isDrawerOpen.value = false }
