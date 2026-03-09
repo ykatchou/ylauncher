@@ -33,6 +33,17 @@ connect ip port="5555":
 # Run all checks (typecheck + lint)
 check: typecheck lint-fix
 
+# Run unit tests (JVM)
+test:
+    {{ gradlew }} testDebugUnitTest
+
+# Run instrumented tests (requires connected device/emulator)
+test-device:
+    {{ gradlew }} connectedDebugAndroidTest
+
+# Run all tests
+test-all: test test-device
+
 # Clean build artifacts
 clean:
     {{ gradlew }} clean
