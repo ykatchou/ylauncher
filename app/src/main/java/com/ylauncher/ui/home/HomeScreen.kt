@@ -437,6 +437,7 @@ fun HomeScreen(
             ) {
                 EditFavoritesSheet(
                     favorites = favorites,
+                    resolveApp = { appRepository.findAppByPackage(it) },
                     onSave = { reordered ->
                         viewModel.saveFavorites(reordered)
                         showEditFavorites = false

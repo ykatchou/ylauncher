@@ -102,6 +102,9 @@ class HomeViewModel @Inject constructor(
             appRepository.registerCallback()
             autoPopulateFavoritesIfNeeded()
         }
+        viewModelScope.launch {
+            com.ylauncher.MainActivity.homePressed.collect { closeDrawer() }
+        }
     }
 
     private suspend fun autoPopulateFavoritesIfNeeded() {

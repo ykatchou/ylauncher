@@ -1,10 +1,12 @@
 package com.ylauncher.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
@@ -18,13 +20,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
+import com.ylauncher.data.model.AppInfo
 import com.ylauncher.data.model.FavoriteApp
 
 @Composable
 fun EditFavoritesSheet(
     favorites: List<FavoriteApp>,
+    resolveApp: (String) -> AppInfo?,
     onSave: (List<FavoriteApp>) -> Unit,
     onAddFolder: () -> Unit,
     onDismiss: () -> Unit,
@@ -96,12 +103,25 @@ fun EditFavoritesSheet(
                             Text("▼", style = MaterialTheme.typography.bodyLarge)
                         }
 
-                        // Icon prefix (emoji for folders)
+                        // Icon: emoji for folders, app icon for apps
                         if (favorite.isFolder) {
                             Text(
                                 text = favorite.iconEmoji ?: "📁",
-                                style = MaterialTheme.typography.bodyLarge,
+                                fontSize = 24.sp,
+                                modifier = Modifier.size(32.dp),
                             )
+                        } else {
+                            val appInfo = remember(favorite.packageName) { resolveApp(favorite.packageName) }
+                            appInfo?.icon?.let { drawable ->
+                                val bitmap = remember(drawable) {
+                                    drawable.toBitmap(width = 32, height = 32).asImageBitmap()
+                                }
+                                Image(
+                                    bitmap = bitmap,
+                                    contentDescription = favorite.displayName,
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
                         }
 
                         Text(
