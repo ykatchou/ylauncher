@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         SettingsScreen(
                             prefsRepository = prefsRepository,
+                            appRepository = appRepository,
                             onBack = { navController.popBackStack() },
                         )
                     }

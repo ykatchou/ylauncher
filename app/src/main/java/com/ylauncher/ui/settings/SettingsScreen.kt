@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -20,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,9 +36,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
+import com.ylauncher.data.model.AppInfo
+import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.data.repository.PrefsRepository
 import com.ylauncher.ui.hal.HalAction
 import com.ylauncher.util.openDefaultLauncherSettings
@@ -42,6 +52,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     prefsRepository: PrefsRepository,
+    appRepository: AppRepository,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -282,16 +293,19 @@ fun SettingsScreen(
                 label = "Tap",
                 currentAction = currentTap,
                 onActionSelected = { scope.launch { prefsRepository.setHalTapAction(configPanelIndex, it) } },
+                appRepository = appRepository,
             )
             ActionPicker(
                 label = "Long press",
                 currentAction = currentLongPress,
                 onActionSelected = { scope.launch { prefsRepository.setHalLongPressAction(configPanelIndex, it) } },
+                appRepository = appRepository,
             )
             ActionPicker(
                 label = "Double tap",
                 currentAction = currentDoubleTap,
                 onActionSelected = { scope.launch { prefsRepository.setHalDoubleTapAction(configPanelIndex, it) } },
+                appRepository = appRepository,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -398,12 +412,21 @@ private fun ActionPicker(
     label: String,
     currentAction: String,
     onActionSelected: (String) -> Unit,
+    appRepository: AppRepository,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showAppPicker by remember { mutableStateOf(false) }
     val action = HalAction.fromKey(currentAction)
+    val context = LocalContext.current
     val displayName = if (action == HalAction.CUSTOM_APP) {
         val decoded = HalAction.decodeApp(currentAction)
-        "App: ${decoded?.first?.substringAfterLast('.') ?: "?"}"
+        if (decoded != null) {
+            try {
+                val pm = context.packageManager
+                val appLabel = pm.getApplicationInfo(decoded.first, 0).loadLabel(pm).toString()
+                appLabel
+            } catch (_: Exception) { decoded.first.substringAfterLast('.') }
+        } else "?"
     } else action.label
 
     Column(modifier = Modifier.padding(vertical = 6.dp)) {
@@ -431,16 +454,92 @@ private fun ActionPicker(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            val nonAppActions = HalAction.entries.filter { it != HalAction.CUSTOM_APP }
-            nonAppActions.forEach { halAction ->
+            HalAction.entries.forEach { halAction ->
                 androidx.compose.material3.DropdownMenuItem(
                     text = { Text(halAction.label) },
                     onClick = {
                         expanded = false
-                        onActionSelected(halAction.name)
+                        if (halAction == HalAction.CUSTOM_APP) {
+                            showAppPicker = true
+                        } else {
+                            onActionSelected(halAction.name)
+                        }
                     },
                 )
             }
         }
     }
+
+    if (showAppPicker) {
+        AppPickerDialog(
+            appRepository = appRepository,
+            onAppSelected = { app ->
+                showAppPicker = false
+                onActionSelected(HalAction.encodeApp(app.packageName, app.activityClassName))
+            },
+            onDismiss = { showAppPicker = false },
+        )
+    }
+}
+
+@Composable
+private fun AppPickerDialog(
+    appRepository: AppRepository,
+    onAppSelected: (AppInfo) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val apps by appRepository.appList.collectAsState()
+    var query by remember { mutableStateOf("") }
+    val filtered = remember(apps, query) {
+        if (query.isBlank()) apps
+        else apps.filter { it.appLabel.contains(query, ignoreCase = true) }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select app") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Search…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyColumn(modifier = Modifier.height(350.dp)) {
+                    items(filtered, key = { it.packageName + it.activityClassName }) { app ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onAppSelected(app) }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            app.icon?.let { icon ->
+                                val bitmap = remember(icon) {
+                                    icon.toBitmap(width = 36, height = 36).asImageBitmap()
+                                }
+                                androidx.compose.foundation.Image(
+                                    bitmap = bitmap,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+                            Text(
+                                text = app.appLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
