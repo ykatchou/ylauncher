@@ -4,6 +4,7 @@ import android.app.WallpaperManager
 import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.provider.MediaStore
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -55,6 +56,8 @@ import com.ylauncher.service.ScreenLockService
 import com.ylauncher.ui.components.AllAppsButton
 import com.ylauncher.ui.components.ClockWidget
 import com.ylauncher.ui.drawer.AppDrawerScreen
+import com.ylauncher.ui.hal.HalAction
+import com.ylauncher.ui.hal.HalActionExecutor
 import com.ylauncher.ui.hal.HalButton
 import com.ylauncher.ui.theme.HomeTextColor
 import com.ylauncher.ui.theme.HomeTextColorDim
@@ -88,6 +91,9 @@ fun HomeScreen(
     val swipeLeftActivity by viewModel.swipeLeftActivity.collectAsState()
     val swipeRightActivity by viewModel.swipeRightActivity.collectAsState()
     val halAssistantPackage by viewModel.halAssistantPackage.collectAsState()
+    val halTapAction by viewModel.halTapAction.collectAsState()
+    val halLongPressAction by viewModel.halLongPressAction.collectAsState()
+    val halDoubleTapAction by viewModel.halDoubleTapAction.collectAsState()
     val notifications by NotificationService.notifications.collectAsState()
     val activePanel by viewModel.activePanel.collectAsState()
     val panelNames by viewModel.panelNames.collectAsState()
@@ -95,7 +101,6 @@ fun HomeScreen(
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
     var showEditFavorites by remember { mutableStateOf(false) }
-    var showHalMenu by remember { mutableStateOf(false) }
     var showBackgroundMenu by remember { mutableStateOf(false) }
     var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
     val density = LocalDensity.current
@@ -339,44 +344,46 @@ fun HomeScreen(
                     }
 
                     Box {
-                        HalButton(
-                            onClick = {
-                                if (halAssistantPackage.isNotBlank()) {
-                                    val launched = AppLauncher.launch(context, halAssistantPackage)
-                                    if (!launched) {
-                                        context.showToast("Assistant app not found — configure in Settings")
-                                    }
-                                } else {
-                                    context.showToast("No assistant configured — set one in Settings")
-                                }
-                            },
-                            onLongClick = { showHalMenu = true },
-                        )
-
-                        DropdownMenu(
-                            expanded = showHalMenu,
-                            onDismissRequest = { showHalMenu = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Settings") },
-                                onClick = { showHalMenu = false; onNavigateToSettings() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("About") },
-                                onClick = { showHalMenu = false; onNavigateToAbout() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Reimport favorites") },
-                                onClick = {
-                                    showHalMenu = false
-                                    if (viewModel.hasUsageStatsPermission()) {
-                                        viewModel.reimportFromUsageStats()
-                                    } else {
-                                        viewModel.requestUsageStatsPermission()
-                                    }
-                                },
-                            )
+                        // Resolve icon for the tap action
+                        val tapIcon = remember(halTapAction) {
+                            val decoded = HalAction.decodeApp(halTapAction)
+                            if (decoded != null) {
+                                try { context.packageManager.getApplicationIcon(decoded.first) } catch (_: Exception) { null }
+                            } else when (HalAction.fromKey(halTapAction)) {
+                                HalAction.ASSISTANT -> try { context.packageManager.getApplicationIcon("com.google.android.googlequicksearchbox") } catch (_: Exception) { null }
+                                HalAction.CAMERA -> try { context.packageManager.getApplicationIcon(Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).resolveActivity(context.packageManager)?.packageName ?: "") } catch (_: Exception) { null }
+                                HalAction.PHONE -> try { context.packageManager.getApplicationIcon(Intent(Intent.ACTION_DIAL).resolveActivity(context.packageManager)?.packageName ?: "") } catch (_: Exception) { null }
+                                else -> null
+                            }
                         }
+
+                        HalButton(
+                            icon = tapIcon,
+                            onClick = {
+                                HalActionExecutor.execute(
+                                    context, halTapAction,
+                                    onOpenDrawer = { viewModel.openDrawer() },
+                                    onOpenSettings = onNavigateToSettings,
+                                    onEditFavorites = { showEditFavorites = true },
+                                )
+                            },
+                            onLongClick = {
+                                HalActionExecutor.execute(
+                                    context, halLongPressAction,
+                                    onOpenDrawer = { viewModel.openDrawer() },
+                                    onOpenSettings = onNavigateToSettings,
+                                    onEditFavorites = { showEditFavorites = true },
+                                )
+                            },
+                            onDoubleTap = {
+                                HalActionExecutor.execute(
+                                    context, halDoubleTapAction,
+                                    onOpenDrawer = { viewModel.openDrawer() },
+                                    onOpenSettings = onNavigateToSettings,
+                                    onEditFavorites = { showEditFavorites = true },
+                                )
+                            },
+                        )
                     }
 
                     Box(

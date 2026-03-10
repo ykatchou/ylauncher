@@ -45,6 +45,9 @@ class PrefsRepository @Inject constructor(
         val RECENT_APPS_COUNT = intPreferencesKey("recent_apps_count")
         val ACTIVE_PANEL = intPreferencesKey("active_panel")
         val PANEL_NAMES = stringPreferencesKey("panel_names")
+        val HAL_TAP_ACTION = stringPreferencesKey("hal_tap_action")
+        val HAL_LONG_PRESS_ACTION = stringPreferencesKey("hal_long_press_action")
+        val HAL_DOUBLE_TAP_ACTION = stringPreferencesKey("hal_double_tap_action")
     }
 
     val isFirstLaunch: Flow<Boolean> = dataStore.data.map { it[FIRST_LAUNCH] ?: true }
@@ -76,6 +79,14 @@ class PrefsRepository @Inject constructor(
     val panelNames: Flow<List<String>> = dataStore.data.map { prefs ->
         prefs[PANEL_NAMES]?.split("|")?.filter { it.isNotBlank() } ?: listOf("Perso", "Pro")
     }
+
+    val halTapAction: Flow<String> = dataStore.data.map { it[HAL_TAP_ACTION] ?: "ASSISTANT;;ASSISTANT" }
+    val halLongPressAction: Flow<String> = dataStore.data.map { it[HAL_LONG_PRESS_ACTION] ?: "SETTINGS;;SETTINGS" }
+    val halDoubleTapAction: Flow<String> = dataStore.data.map { it[HAL_DOUBLE_TAP_ACTION] ?: "APP_DRAWER;;APP_DRAWER" }
+
+    fun halTapActionForPanel(panelId: Int): Flow<String> = halTapAction.map { it.split(";;").getOrElse(panelId) { "ASSISTANT" } }
+    fun halLongPressActionForPanel(panelId: Int): Flow<String> = halLongPressAction.map { it.split(";;").getOrElse(panelId) { "SETTINGS" } }
+    fun halDoubleTapActionForPanel(panelId: Int): Flow<String> = halDoubleTapAction.map { it.split(";;").getOrElse(panelId) { "APP_DRAWER" } }
 
     suspend fun setFirstLaunchDone() {
         dataStore.edit { it[FIRST_LAUNCH] = false }
@@ -143,5 +154,32 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setPanelNames(names: List<String>) {
         dataStore.edit { it[PANEL_NAMES] = names.joinToString("|") }
+    }
+
+    suspend fun setHalTapAction(panelId: Int, action: String) {
+        dataStore.edit { prefs ->
+            val parts = (prefs[HAL_TAP_ACTION] ?: "ASSISTANT;;ASSISTANT").split(";;").toMutableList()
+            while (parts.size <= panelId) parts.add("ASSISTANT")
+            parts[panelId] = action
+            prefs[HAL_TAP_ACTION] = parts.joinToString(";;")
+        }
+    }
+
+    suspend fun setHalLongPressAction(panelId: Int, action: String) {
+        dataStore.edit { prefs ->
+            val parts = (prefs[HAL_LONG_PRESS_ACTION] ?: "SETTINGS;;SETTINGS").split(";;").toMutableList()
+            while (parts.size <= panelId) parts.add("SETTINGS")
+            parts[panelId] = action
+            prefs[HAL_LONG_PRESS_ACTION] = parts.joinToString(";;")
+        }
+    }
+
+    suspend fun setHalDoubleTapAction(panelId: Int, action: String) {
+        dataStore.edit { prefs ->
+            val parts = (prefs[HAL_DOUBLE_TAP_ACTION] ?: "APP_DRAWER;;APP_DRAWER").split(";;").toMutableList()
+            while (parts.size <= panelId) parts.add("APP_DRAWER")
+            parts[panelId] = action
+            prefs[HAL_DOUBLE_TAP_ACTION] = parts.joinToString(";;")
+        }
     }
 }

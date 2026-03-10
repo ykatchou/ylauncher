@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ylauncher.data.repository.PrefsRepository
+import com.ylauncher.ui.hal.HalAction
 import com.ylauncher.util.openDefaultLauncherSettings
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -59,6 +60,11 @@ fun SettingsScreen(
     val suggestionCount by prefsRepository.suggestionCount.collectAsState(initial = 3)
     val recentAppsCount by prefsRepository.recentAppsCount.collectAsState(initial = 0)
     val panelNames by prefsRepository.panelNames.collectAsState(initial = listOf("Perso", "Pro"))
+    val activePanel by prefsRepository.activePanel.collectAsState(initial = 0)
+    val halTapRaw by prefsRepository.halTapAction.collectAsState(initial = "ASSISTANT;;ASSISTANT")
+    val halLongPressRaw by prefsRepository.halLongPressAction.collectAsState(initial = "SETTINGS;;SETTINGS")
+    val halDoubleTapRaw by prefsRepository.halDoubleTapAction.collectAsState(initial = "APP_DRAWER;;APP_DRAWER")
+    var configPanelIndex by remember { mutableStateOf(0) }
 
     // Local state for sliders to avoid excessive DataStore writes during drag
     var sliderValue by remember(textSizeScale) { mutableFloatStateOf(textSizeScale) }
@@ -242,6 +248,56 @@ fun SettingsScreen(
             HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
             Spacer(modifier = Modifier.height(16.dp))
 
+            SectionHeader("Magic button")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Panel selector for button config
+            Row(
+                modifier = Modifier.padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Configure for: ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                panelNames.forEachIndexed { index, name ->
+                    Text(
+                        text = if (index == configPanelIndex) "● $name" else "○ $name",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (index == configPanelIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        fontWeight = if (index == configPanelIndex) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier
+                            .clickable { configPanelIndex = index }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+
+            val currentTap = halTapRaw.split(";;").getOrElse(configPanelIndex) { "ASSISTANT" }
+            val currentLongPress = halLongPressRaw.split(";;").getOrElse(configPanelIndex) { "SETTINGS" }
+            val currentDoubleTap = halDoubleTapRaw.split(";;").getOrElse(configPanelIndex) { "APP_DRAWER" }
+
+            ActionPicker(
+                label = "Tap",
+                currentAction = currentTap,
+                onActionSelected = { scope.launch { prefsRepository.setHalTapAction(configPanelIndex, it) } },
+            )
+            ActionPicker(
+                label = "Long press",
+                currentAction = currentLongPress,
+                onActionSelected = { scope.launch { prefsRepository.setHalLongPressAction(configPanelIndex, it) } },
+            )
+            ActionPicker(
+                label = "Double tap",
+                currentAction = currentDoubleTap,
+                onActionSelected = { scope.launch { prefsRepository.setHalDoubleTapAction(configPanelIndex, it) } },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
             SectionHeader("Behavior")
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -334,5 +390,57 @@ private fun SettingsToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
         )
+    }
+}
+
+@Composable
+private fun ActionPicker(
+    label: String,
+    currentAction: String,
+    onActionSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val action = HalAction.fromKey(currentAction)
+    val displayName = if (action == HalAction.CUSTOM_APP) {
+        val decoded = HalAction.decodeApp(currentAction)
+        "App: ${decoded?.first?.substringAfterLast('.') ?: "?"}"
+    } else action.label
+
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            val nonAppActions = HalAction.entries.filter { it != HalAction.CUSTOM_APP }
+            nonAppActions.forEach { halAction ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(halAction.label) },
+                    onClick = {
+                        expanded = false
+                        onActionSelected(halAction.name)
+                    },
+                )
+            }
+        }
     }
 }
