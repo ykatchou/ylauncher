@@ -5,4 +5,5 @@ data class AppNotification(
     val title: String,
     val text: String,
     val timestamp: Long,
+    val notificationKey: String = "",
 )

@@ -4,15 +4,18 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +49,7 @@ fun FavoriteItem(
     iconEmoji: String? = null,
     isFolder: Boolean = false,
     notification: AppNotification? = null,
+    onDismissNotification: (() -> Unit)? = null,
     onEditFavorites: (() -> Unit)? = null,
     onEditFolder: (() -> Unit)? = null,
     onMoveToFolder: (() -> Unit)? = null,
@@ -63,65 +67,135 @@ fun FavoriteItem(
         }
     }
 
-    Row(
-        modifier = modifier
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = { showMenu = true },
-            )
-            .padding(vertical = 6.dp, horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        if (isFolder && iconEmoji != null) {
-            // Folder: show emoji icon
-            Text(
-                text = iconEmoji,
-                fontSize = 32.sp,
-                modifier = Modifier.size(44.dp),
-            )
+    val timeAgo = remember(notification?.timestamp, now) {
+        notification?.let {
+            DateUtils.getRelativeTimeSpanString(
+                it.timestamp,
+                now,
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE,
+            ).toString()
+        } ?: ""
+    }
+
+    val notifDisplayText = if (notification != null) {
+        val base = if (notification.title.isNotBlank() && notification.text.isNotBlank()) {
+            "${notification.title}: ${notification.text}"
         } else {
-            appInfo?.icon?.let { drawable ->
-                val bitmap = remember(drawable) {
-                    drawable.toBitmap(width = 44, height = 44).asImageBitmap()
-                }
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = displayName,
-                    modifier = Modifier.size(44.dp),
-                )
-            }
+            notification.title.ifBlank { notification.text }
         }
+        "$base · $timeAgo"
+    } else null
 
-        Column {
-            Text(
-                text = displayName,
-                style = MaterialTheme.typography.headlineMedium.copy(shadow = wallpaperShadow),
-                color = HomeTextColor,
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .combinedClickable(
+            onClick = onClick,
+            onLongClick = { showMenu = true },
+        )
+        .padding(vertical = 6.dp, horizontal = 24.dp)
+
+    Box(modifier = modifier) {
+        if (notification != null && onDismissNotification != null) {
+            val dismissState = rememberSwipeToDismissBoxState(
+                confirmValueChange = { value ->
+                    if (value != SwipeToDismissBoxValue.Settled) {
+                        onDismissNotification()
+                        true
+                    } else {
+                        false
+                    }
+                },
             )
-
-            if (notification != null) {
-                val timeAgo = remember(notification.timestamp, now) {
-                    DateUtils.getRelativeTimeSpanString(
-                        notification.timestamp,
-                        now,
-                        DateUtils.MINUTE_IN_MILLIS,
-                        DateUtils.FORMAT_ABBREV_RELATIVE,
-                    ).toString()
+            SwipeToDismissBox(
+                state = dismissState,
+                backgroundContent = {},
+                enableDismissFromStartToEnd = true,
+                enableDismissFromEndToStart = true,
+            ) {
+                Row(
+                    modifier = rowModifier,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isFolder && iconEmoji != null) {
+                        Text(
+                            text = iconEmoji,
+                            fontSize = 32.sp,
+                            modifier = Modifier.size(44.dp),
+                        )
+                    } else {
+                        appInfo?.icon?.let { drawable ->
+                            val bitmap = remember(drawable) {
+                                drawable.toBitmap(width = 44, height = 44).asImageBitmap()
+                            }
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = displayName,
+                                modifier = Modifier.size(44.dp),
+                            )
+                        }
+                    }
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.headlineMedium.copy(shadow = wallpaperShadow),
+                        color = HomeTextColor,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 14.dp),
+                    )
+                    if (notifDisplayText != null) {
+                        Text(
+                            text = notifDisplayText,
+                            style = MaterialTheme.typography.bodySmall.copy(shadow = wallpaperShadow),
+                            color = HomeTextColorDim,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
                 }
-                val notifText = if (notification.title.isNotBlank() && notification.text.isNotBlank()) {
-                    "${notification.title}: ${notification.text}"
+            }
+        } else {
+            Row(
+                modifier = rowModifier,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isFolder && iconEmoji != null) {
+                    Text(
+                        text = iconEmoji,
+                        fontSize = 32.sp,
+                        modifier = Modifier.size(44.dp),
+                    )
                 } else {
-                    notification.title.ifBlank { notification.text }
+                    appInfo?.icon?.let { drawable ->
+                        val bitmap = remember(drawable) {
+                            drawable.toBitmap(width = 44, height = 44).asImageBitmap()
+                        }
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = displayName,
+                            modifier = Modifier.size(44.dp),
+                        )
+                    }
                 }
-
                 Text(
-                    text = "$notifText · $timeAgo",
-                    style = MaterialTheme.typography.bodySmall.copy(shadow = wallpaperShadow),
-                    color = HomeTextColorDim,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = displayName,
+                    style = MaterialTheme.typography.headlineMedium.copy(shadow = wallpaperShadow),
+                    color = HomeTextColor,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 14.dp),
                 )
+                if (notifDisplayText != null) {
+                    Text(
+                        text = notifDisplayText,
+                        style = MaterialTheme.typography.bodySmall.copy(shadow = wallpaperShadow),
+                        color = HomeTextColorDim,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
         }
 

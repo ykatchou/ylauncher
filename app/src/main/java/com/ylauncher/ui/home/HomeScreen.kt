@@ -264,6 +264,7 @@ fun HomeScreen(
                                         )
                                     },
                                     notification = notifications[favorite.packageName],
+                                    onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
                                     onEditFavorites = { showEditFavorites = true },
                                     onMoveToFolder = if (allFolders.isNotEmpty()) {
                                         { movingFavorite = favorite }
@@ -516,6 +517,7 @@ fun HomeScreen(
                     AppLauncher.launch(context, folderApp.packageName, folderApp.activityClassName)
                     openFolderId = null
                 },
+                onDismissNotification = { pkg -> NotificationService.dismiss(pkg) },
                 onEdit = {
                     openFolderId = null
                     editingFolderId = folderId

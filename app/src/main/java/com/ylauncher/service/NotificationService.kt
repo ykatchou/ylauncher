@@ -21,6 +21,7 @@ class NotificationService : NotificationListenerService() {
             title = title,
             text = text,
             timestamp = sbn.postTime,
+            notificationKey = sbn.key,
         )
         val current = _notifications.value.toMutableMap()
         current[sbn.packageName] = notification
@@ -50,6 +51,7 @@ class NotificationService : NotificationListenerService() {
                     title = title,
                     text = text,
                     timestamp = sbn.postTime,
+                    notificationKey = sbn.key,
                 )
             }
             _notifications.value = current
@@ -67,5 +69,13 @@ class NotificationService : NotificationListenerService() {
 
         private val _notifications = MutableStateFlow<Map<String, AppNotification>>(emptyMap())
         val notifications: StateFlow<Map<String, AppNotification>> = _notifications.asStateFlow()
+
+        fun dismiss(packageName: String) {
+            val key = _notifications.value[packageName]?.notificationKey ?: return
+            val current = _notifications.value.toMutableMap()
+            current.remove(packageName)
+            _notifications.value = current
+            instance?.cancelNotification(key)
+        }
     }
 }
