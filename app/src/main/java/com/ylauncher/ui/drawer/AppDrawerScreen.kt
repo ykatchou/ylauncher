@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,6 +56,7 @@ import com.ylauncher.util.AppLauncher
 import com.ylauncher.util.openAppInfo
 import com.ylauncher.util.openSearch
 import com.ylauncher.util.uninstallApp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -71,9 +74,14 @@ fun AppDrawerScreen(
     val autoShowKeyboard by viewModel.autoShowKeyboard.collectAsState()
     val leftHandMode by viewModel.leftHandMode.collectAsState()
     val hiddenApps by viewModel.hiddenApps.collectAsState()
+    val autoLaunchDelay by viewModel.autoLaunchDelay.collectAsState()
     val listState = rememberLazyListState()
 
     val scope = rememberCoroutineScope()
+
+    // Countdown state — null when not counting down
+    var pendingLaunchApp by remember { mutableStateOf<com.ylauncher.data.model.AppInfo?>(null) }
+    var countdownProgress by remember { mutableFloatStateOf(0f) }
 
     BackHandler { onDismiss() }
 
@@ -82,16 +90,35 @@ fun AppDrawerScreen(
         viewModel.updateSearchQuery("")
     }
 
-    // Auto-launch when single match
+    // Auto-launch when single match, with configurable delay
     LaunchedEffect(filteredApps, searchQuery) {
         if (filteredApps.size == 1 && viewModel.shouldAutoLaunch()) {
             val app = filteredApps[0]
-            if (onAppSelected != null) {
-                onAppSelected(app)
+            val delaySec = autoLaunchDelay
+            if (delaySec <= 0f) {
+                pendingLaunchApp = null
+                if (onAppSelected != null) onAppSelected(app)
+                else AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                onDismiss()
             } else {
-                AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                pendingLaunchApp = app
+                countdownProgress = 0f
+                val startMs = System.currentTimeMillis()
+                val totalMs = (delaySec * 1000).toLong()
+                while (true) {
+                    val elapsed = System.currentTimeMillis() - startMs
+                    countdownProgress = (elapsed.toFloat() / totalMs).coerceIn(0f, 1f)
+                    if (elapsed >= totalMs) break
+                    delay(16L)
+                }
+                pendingLaunchApp = null
+                if (onAppSelected != null) onAppSelected(app)
+                else AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                onDismiss()
             }
-            onDismiss()
+        } else {
+            pendingLaunchApp = null
+            countdownProgress = 0f
         }
     }
 
@@ -156,6 +183,27 @@ fun AppDrawerScreen(
                     unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
                 ),
             )
+
+            // Countdown indicator shown when auto-launch is pending
+            if (pendingLaunchApp != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "Launching ${pendingLaunchApp!!.appLabel}…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    )
+                    LinearProgressIndicator(
+                        progress = { countdownProgress },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    )
+                }
+            }
 
             // App list + alphabet sidebar
             Box(modifier = Modifier.fillMaxSize()) {

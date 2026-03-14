@@ -37,6 +37,9 @@ class AppDrawerViewModel @Inject constructor(
     val hiddenApps = prefsRepository.hiddenApps
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+    val autoLaunchDelay = prefsRepository.autoLaunchDelay
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1f)
+
     val filteredApps: StateFlow<List<AppInfo>> = combine(
         appRepository.appList,
         _searchQuery,

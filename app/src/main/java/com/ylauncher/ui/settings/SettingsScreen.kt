@@ -71,6 +71,7 @@ fun SettingsScreen(
     val suggestionCount by prefsRepository.suggestionCount.collectAsState(initial = 3)
     val recentAppsCount by prefsRepository.recentAppsCount.collectAsState(initial = 0)
     val panelNames by prefsRepository.panelNames.collectAsState(initial = listOf("Perso", "Pro"))
+    val autoLaunchDelay by prefsRepository.autoLaunchDelay.collectAsState(initial = 0f)
     val activePanel by prefsRepository.activePanel.collectAsState(initial = 0)
     val halTapRaw by prefsRepository.halTapAction.collectAsState(initial = "ASSISTANT;;ASSISTANT")
     val halLongPressRaw by prefsRepository.halLongPressAction.collectAsState(initial = "SETTINGS;;SETTINGS")
@@ -81,6 +82,7 @@ fun SettingsScreen(
     var sliderValue by remember(textSizeScale) { mutableFloatStateOf(textSizeScale) }
     var suggestionSlider by remember(suggestionCount) { mutableFloatStateOf(suggestionCount.toFloat()) }
     var recentSlider by remember(recentAppsCount) { mutableFloatStateOf(recentAppsCount.toFloat()) }
+    var autoLaunchDelaySlider by remember(autoLaunchDelay) { mutableFloatStateOf(autoLaunchDelay) }
     var panelNamesText by remember(panelNames) { mutableStateOf(panelNames.joinToString(", ")) }
 
     Surface(
@@ -321,6 +323,29 @@ fun SettingsScreen(
                 checked = autoShowKeyboard,
                 onCheckedChange = { scope.launch { prefsRepository.setAutoShowKeyboard(it) } },
             )
+
+            // Auto-launch delay slider (0.0–5.0s, 0.1 steps)
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = "Auto-launch delay",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = if (autoLaunchDelaySlider <= 0f) "Off (instant)" else "${"%.1f".format(autoLaunchDelaySlider)}s",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+                Slider(
+                    value = autoLaunchDelaySlider,
+                    onValueChange = { autoLaunchDelaySlider = (it * 10).roundToInt() / 10f },
+                    onValueChangeFinished = {
+                        scope.launch { prefsRepository.setAutoLaunchDelay((autoLaunchDelaySlider * 10).roundToInt()) }
+                    },
+                    valueRange = 0f..5f,
+                    steps = 49,
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
