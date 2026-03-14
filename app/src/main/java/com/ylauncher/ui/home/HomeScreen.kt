@@ -337,7 +337,10 @@ fun HomeScreen(
                                     .clickable(
                                         interactionSource = null,
                                         indication = null,
-                                    ) { viewModel.switchPanel(index) }
+                                    ) {
+                                        val target = if (index == activePanel) (activePanel + 1) % panelNames.size else index
+                                        viewModel.switchPanel(target)
+                                    }
                                     .padding(end = 10.dp, top = 4.dp, bottom = 4.dp),
                             )
                         }
