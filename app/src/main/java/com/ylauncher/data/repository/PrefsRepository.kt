@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -49,6 +50,7 @@ class PrefsRepository @Inject constructor(
         val HAL_LONG_PRESS_ACTION = stringPreferencesKey("hal_long_press_action")
         val HAL_DOUBLE_TAP_ACTION = stringPreferencesKey("hal_double_tap_action")
         val AUTO_LAUNCH_DELAY = intPreferencesKey("auto_launch_delay")
+        val HOME_WIDGET_IDS = stringPreferencesKey("home_widget_ids")
         val SHOW_NOTIF_BUBBLE = booleanPreferencesKey("show_notif_bubble")
         val SHOW_NOTIF_PREVIEW = booleanPreferencesKey("show_notif_preview")
         val SHOW_NOTIF_BADGE = booleanPreferencesKey("show_notif_badge")
@@ -86,6 +88,10 @@ class PrefsRepository @Inject constructor(
 
     // Stored as tenths of a second (0–50 = 0.0–5.0s), default 10 = 1.0s
     val autoLaunchDelay: Flow<Float> = dataStore.data.map { (it[AUTO_LAUNCH_DELAY] ?: 10) / 10f }
+
+    val homeWidgetIds: Flow<List<Int>> = dataStore.data.map { prefs ->
+        prefs[HOME_WIDGET_IDS]?.split("|")?.mapNotNull { it.toIntOrNull() }?.filter { it > 0 } ?: emptyList()
+    }
 
     val showNotifBubble: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_BUBBLE] ?: true }
     val showNotifPreview: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_PREVIEW] ?: true }
@@ -187,6 +193,26 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setAutoLaunchDelay(tenths: Int) {
         dataStore.edit { it[AUTO_LAUNCH_DELAY] = tenths.coerceIn(0, 50) }
+    }
+
+    suspend fun homeWidgetIdsOnce(): List<Int> = homeWidgetIds.first()
+
+    suspend fun addHomeWidgetId(widgetId: Int) {
+        dataStore.edit { prefs ->
+            val current = prefs[HOME_WIDGET_IDS]?.split("|")?.mapNotNull { it.toIntOrNull() }?.filter { it > 0 } ?: emptyList()
+            prefs[HOME_WIDGET_IDS] = (current + widgetId).joinToString("|")
+        }
+    }
+
+    suspend fun removeHomeWidgetId(widgetId: Int) {
+        dataStore.edit { prefs ->
+            val current = prefs[HOME_WIDGET_IDS]?.split("|")?.mapNotNull { it.toIntOrNull() }?.filter { it > 0 } ?: emptyList()
+            prefs[HOME_WIDGET_IDS] = current.filter { it != widgetId }.joinToString("|")
+        }
+    }
+
+    suspend fun clearHomeWidgetIds() {
+        dataStore.edit { it[HOME_WIDGET_IDS] = "" }
     }
 
     suspend fun setShowNotifBubble(value: Boolean) {

@@ -15,14 +15,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -46,6 +51,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpOffset
@@ -57,8 +63,10 @@ import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.service.NotificationService
 import com.ylauncher.service.ScreenLockService
 import com.ylauncher.ui.components.AllAppsButton
+import com.ylauncher.ui.components.AppWidgetContainer
 import com.ylauncher.ui.components.ClockWidget
 import com.ylauncher.ui.components.NotificationBubble
+import com.ylauncher.ui.components.WidgetPickerDialog
 import com.ylauncher.ui.drawer.AppDrawerScreen
 import com.ylauncher.ui.hal.HalAction
 import com.ylauncher.ui.hal.HalActionExecutor
@@ -81,6 +89,9 @@ private const val SWIPE_THRESHOLD = 100f
 fun HomeScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onRequestWidgetPicker: () -> Unit,
+    onWidgetSelected: (ComponentName) -> Unit,
+    onWidgetPickerDismiss: () -> Unit,
     appRepository: AppRepository,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -104,6 +115,8 @@ fun HomeScreen(
     val showNotifBubble by viewModel.showNotifBubble.collectAsState()
     val showNotifPreview by viewModel.showNotifPreview.collectAsState()
     val showNotifBadge by viewModel.showNotifBadge.collectAsState()
+    val homeWidgetIds by viewModel.homeWidgetIds.collectAsState()
+    val showWidgetPicker by com.ylauncher.MainActivity.showWidgetPicker.collectAsState()
 
     // Ensure notification listener is connected and seeded
     LaunchedEffect(Unit) {
@@ -116,6 +129,9 @@ fun HomeScreen(
         // Also reseed if already connected
         NotificationService.reseed()
     }
+
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val widgetColumnWidthDp = (screenWidthDp * 0.45f).toInt()
 
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
@@ -206,7 +222,9 @@ fun HomeScreen(
                 // Top: Clock + notification bubble
                 if (showClock) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
                         verticalAlignment = Alignment.Top,
                     ) {
                         ClockWidget(
@@ -242,107 +260,133 @@ fun HomeScreen(
                     }
                 }
 
-                // Middle: Favorites list with subtle scrim
-                Box(
+                // Middle: Favorites (left) + Widgets (right)
+                Row(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
                 ) {
-                    // Subtle gradient scrim for readability
+                    // Left: Favorites
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.15f),
-                                        Color.Black.copy(alpha = 0.25f),
-                                        Color.Black.copy(alpha = 0.15f),
-                                        Color.Transparent,
-                                    ),
-                                )
-                            )
-                    )
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
+                            .weight(1f)
+                            .fillMaxHeight(),
                     ) {
-                        favorites.forEach { favorite ->
-                            if (favorite.isFolder && favorite.folderId != null) {
-                                // Folder item
-                                FavoriteItem(
-                                    appInfo = null,
-                                    displayName = favorite.displayName,
-                                    iconEmoji = favorite.iconEmoji,
-                                    isFolder = true,
-                                    onClick = { openFolderId = favorite.folderId },
-                                    onEditFavorites = { showEditFavorites = true },
-                                    onEditFolder = { editingFolderId = favorite.folderId },
-                                    onMoveToPanel = if (panelNames.size > 1) {
-                                        { movingFavoriteToPanel = favorite }
-                                    } else null,
+                        // Subtle gradient scrim for readability
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.15f),
+                                            Color.Black.copy(alpha = 0.25f),
+                                            Color.Black.copy(alpha = 0.15f),
+                                            Color.Transparent,
+                                        ),
+                                    )
                                 )
-                            } else {
-                                // Regular app item
-                                val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
-                                    appRepository.findAppByPackage(favorite.packageName)
+                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            favorites.forEach { favorite ->
+                                if (favorite.isFolder && favorite.folderId != null) {
+                                    FavoriteItem(
+                                        appInfo = null,
+                                        displayName = favorite.displayName,
+                                        iconEmoji = favorite.iconEmoji,
+                                        isFolder = true,
+                                        onClick = { openFolderId = favorite.folderId },
+                                        onEditFavorites = { showEditFavorites = true },
+                                        onEditFolder = { editingFolderId = favorite.folderId },
+                                        onMoveToPanel = if (panelNames.size > 1) {
+                                            { movingFavoriteToPanel = favorite }
+                                        } else null,
+                                    )
+                                } else {
+                                    val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
+                                        appRepository.findAppByPackage(favorite.packageName)
+                                    }
+                                    FavoriteItem(
+                                        appInfo = appInfo,
+                                        displayName = favorite.displayName,
+                                        onClick = {
+                                            AppLauncher.launch(
+                                                context,
+                                                favorite.packageName,
+                                                favorite.activityClassName,
+                                            )
+                                        },
+                                        notification = notifications[favorite.packageName],
+                                        showNotifPreview = showNotifPreview,
+                                        showNotifBadge = showNotifBadge,
+                                        onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
+                                        onEditFavorites = { showEditFavorites = true },
+                                        onMoveToFolder = if (allFolders.isNotEmpty()) {
+                                            { movingFavorite = favorite }
+                                        } else null,
+                                        onMoveToPanel = if (panelNames.size > 1) {
+                                            { movingFavoriteToPanel = favorite }
+                                        } else null,
+                                        onAppInfo = { context.openAppInfo(favorite.packageName) },
+                                        onUninstall = { context.uninstallApp(favorite.packageName) },
+                                    )
                                 }
-                                FavoriteItem(
-                                    appInfo = appInfo,
-                                    displayName = favorite.displayName,
-                                    onClick = {
-                                        AppLauncher.launch(
-                                            context,
-                                            favorite.packageName,
-                                            favorite.activityClassName,
-                                        )
-                                    },
-                                    notification = notifications[favorite.packageName],
-                                    showNotifPreview = showNotifPreview,
-                                    showNotifBadge = showNotifBadge,
-                                    onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
-                                    onEditFavorites = { showEditFavorites = true },
-                                    onMoveToFolder = if (allFolders.isNotEmpty()) {
-                                        { movingFavorite = favorite }
-                                    } else null,
-                                    onMoveToPanel = if (panelNames.size > 1) {
-                                        { movingFavoriteToPanel = favorite }
-                                    } else null,
-                                    onAppInfo = { context.openAppInfo(favorite.packageName) },
-                                    onUninstall = { context.uninstallApp(favorite.packageName) },
-                                )
+                            }
+
+                            val suggestedApps by viewModel.suggestedApps.collectAsState()
+                            if (suggestedApps.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                suggestedApps.forEach { app ->
+                                    FavoriteItem(
+                                        appInfo = app,
+                                        displayName = app.appLabel,
+                                        onClick = {
+                                            AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                        },
+                                        modifier = Modifier.alpha(0.6f),
+                                    )
+                                }
+                            }
+
+                            val recentApps by viewModel.recentApps.collectAsState()
+                            if (recentApps.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                recentApps.forEach { app ->
+                                    FavoriteItem(
+                                        appInfo = app,
+                                        displayName = app.appLabel,
+                                        onClick = {
+                                            AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                        },
+                                        modifier = Modifier.alpha(0.4f),
+                                    )
+                                }
                             }
                         }
+                    }
 
-                        // App suggestions (most-used non-favorites)
-                        val suggestedApps by viewModel.suggestedApps.collectAsState()
-                        if (suggestedApps.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            suggestedApps.forEach { app ->
-                                FavoriteItem(
-                                    appInfo = app,
-                                    displayName = app.appLabel,
-                                    onClick = {
-                                        AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
-                                    },
-                                    modifier = Modifier.alpha(0.6f),
-                                )
-                            }
-                        }
-
-                        // Recently used apps
-                        val recentApps by viewModel.recentApps.collectAsState()
-                        if (recentApps.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            recentApps.forEach { app ->
-                                FavoriteItem(
-                                    appInfo = app,
-                                    displayName = app.appLabel,
-                                    onClick = {
-                                        AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
-                                    },
-                                    modifier = Modifier.alpha(0.4f),
+                    // Right: Widgets column
+                    if (homeWidgetIds.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(0.45f)
+                                .verticalScroll(rememberScrollState())
+                                .padding(end = 8.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            homeWidgetIds.forEach { widgetId ->
+                                AppWidgetContainer(
+                                    widgetId = widgetId,
+                                    widgetHost = viewModel.widgetHost,
+                                    onLongClick = { onRequestWidgetPicker() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
                                 )
                             }
                         }
@@ -486,6 +530,22 @@ fun HomeScreen(
                     }
                 },
             )
+            DropdownMenuItem(
+                text = { Text("Add widget") },
+                onClick = {
+                    showBackgroundMenu = false
+                    onRequestWidgetPicker()
+                },
+            )
+            if (homeWidgetIds.isNotEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("Remove all widgets") },
+                    onClick = {
+                        showBackgroundMenu = false
+                        viewModel.removeAllWidgets()
+                    },
+                )
+            }
             DropdownMenuItem(
                 text = { Text("Settings") },
                 onClick = { showBackgroundMenu = false; onNavigateToSettings() },
@@ -633,6 +693,15 @@ fun HomeScreen(
                     movingFavoriteToPanel = null
                 },
                 onDismiss = { movingFavoriteToPanel = null },
+            )
+        }
+
+        // Widget picker dialog
+        if (showWidgetPicker) {
+            WidgetPickerDialog(
+                maxWidthDp = widgetColumnWidthDp,
+                onWidgetSelected = { provider -> onWidgetSelected(provider) },
+                onDismiss = { onWidgetPickerDismiss() },
             )
         }
     }

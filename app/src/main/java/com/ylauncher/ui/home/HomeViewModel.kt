@@ -13,6 +13,7 @@ import com.ylauncher.data.model.FolderApp
 import com.ylauncher.data.repository.AppRepository
 import com.ylauncher.data.repository.PrefsRepository
 import com.ylauncher.util.UsageStatsHelper
+import com.ylauncher.widget.LauncherWidgetHost
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,7 @@ class HomeViewModel @Inject constructor(
     private val favoriteDao: FavoriteDao,
     private val folderDao: FolderDao,
     private val prefsRepository: PrefsRepository,
+    val widgetHost: LauncherWidgetHost,
 ) : ViewModel() {
 
     // All favorites (unfiltered, used by suggestions/recent to exclude all fav packages)
@@ -82,6 +84,9 @@ class HomeViewModel @Inject constructor(
             excludePackages = favPackages + suggested,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val homeWidgetIds = prefsRepository.homeWidgetIds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val showClock = prefsRepository.showClock
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -219,6 +224,19 @@ class HomeViewModel @Inject constructor(
     fun hasUsageStatsPermission(): Boolean = UsageStatsHelper.hasPermission(context)
 
     fun requestUsageStatsPermission() = UsageStatsHelper.requestPermission(context)
+
+    fun removeWidget(widgetId: Int) {
+        widgetHost.deleteAppWidgetId(widgetId)
+        viewModelScope.launch { prefsRepository.removeHomeWidgetId(widgetId) }
+    }
+
+    fun removeAllWidgets() {
+        viewModelScope.launch {
+            val ids = prefsRepository.homeWidgetIdsOnce()
+            ids.forEach { widgetHost.deleteAppWidgetId(it) }
+            prefsRepository.clearHomeWidgetIds()
+        }
+    }
 
     fun openDrawer() { _isDrawerOpen.value = true }
     fun closeDrawer() { _isDrawerOpen.value = false }

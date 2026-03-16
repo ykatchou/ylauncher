@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ylauncher.data.db.FavoriteDao
 import com.ylauncher.data.db.FolderDao
 import com.ylauncher.data.db.YLauncherDatabase
+import com.ylauncher.widget.LauncherWidgetHost
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,5 +46,11 @@ object AppModule {
     @Provides
     fun provideFolderDao(database: YLauncherDatabase): FolderDao {
         return database.folderDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWidgetHost(@ApplicationContext context: Context): LauncherWidgetHost {
+        return LauncherWidgetHost(context)
     }
 }
