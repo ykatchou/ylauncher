@@ -6,4 +6,5 @@ data class AppNotification(
     val text: String,
     val timestamp: Long,
     val notificationKey: String = "",
+    val count: Int = 1,
 )

@@ -1,6 +1,7 @@
 package com.ylauncher.ui.home
 
 import android.app.WallpaperManager
+import android.content.ComponentName
 import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.CalendarContract
@@ -30,7 +31,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import android.service.notification.NotificationListenerService.requestRebind
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -55,6 +58,7 @@ import com.ylauncher.service.NotificationService
 import com.ylauncher.service.ScreenLockService
 import com.ylauncher.ui.components.AllAppsButton
 import com.ylauncher.ui.components.ClockWidget
+import com.ylauncher.ui.components.NotificationBubble
 import com.ylauncher.ui.drawer.AppDrawerScreen
 import com.ylauncher.ui.hal.HalAction
 import com.ylauncher.ui.hal.HalActionExecutor
@@ -97,6 +101,21 @@ fun HomeScreen(
     val notifications by NotificationService.notifications.collectAsState()
     val activePanel by viewModel.activePanel.collectAsState()
     val panelNames by viewModel.panelNames.collectAsState()
+    val showNotifBubble by viewModel.showNotifBubble.collectAsState()
+    val showNotifPreview by viewModel.showNotifPreview.collectAsState()
+    val showNotifBadge by viewModel.showNotifBadge.collectAsState()
+
+    // Ensure notification listener is connected and seeded
+    LaunchedEffect(Unit) {
+        // Request rebind in case the listener was disconnected after reinstall
+        try {
+            requestRebind(
+                ComponentName(context, NotificationService::class.java)
+            )
+        } catch (_: Exception) { }
+        // Also reseed if already connected
+        NotificationService.reseed()
+    }
 
     var totalDragX by remember { mutableFloatStateOf(0f) }
     var totalDragY by remember { mutableFloatStateOf(0f) }
@@ -184,27 +203,43 @@ fun HomeScreen(
                     .padding(vertical = 48.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Top: Clock
+                // Top: Clock + notification bubble
                 if (showClock) {
-                    ClockWidget(
-                        onClockClick = {
-                            try {
-                                context.startActivity(
-                                    Intent(AlarmClock.ACTION_SHOW_ALARMS)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            } catch (_: Exception) { }
-                        },
-                        onDateClick = {
-                            try {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW)
-                                        .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build())
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            } catch (_: Exception) { }
-                        },
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        ClockWidget(
+                            onClockClick = {
+                                try {
+                                    context.startActivity(
+                                        Intent(AlarmClock.ACTION_SHOW_ALARMS)
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                } catch (_: Exception) { }
+                            },
+                            onDateClick = {
+                                try {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_VIEW)
+                                            .setData(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build())
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                } catch (_: Exception) { }
+                            },
+                        )
+                        if (showNotifBubble) {
+                            NotificationBubble(
+                                notifications = notifications.values.toList(),
+                                resolveAppLabel = { pkg -> appRepository.findAppByPackage(pkg)?.appLabel },
+                                onClickNotification = { pkg -> AppLauncher.launch(context, pkg) },
+                                onDismissNotification = { pkg -> NotificationService.dismiss(pkg) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 16.dp, top = 4.dp),
+                            )
+                        }
+                    }
                 }
 
                 // Middle: Favorites list with subtle scrim
@@ -264,6 +299,8 @@ fun HomeScreen(
                                         )
                                     },
                                     notification = notifications[favorite.packageName],
+                                    showNotifPreview = showNotifPreview,
+                                    showNotifBadge = showNotifBadge,
                                     onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
                                     onEditFavorites = { showEditFavorites = true },
                                     onMoveToFolder = if (allFolders.isNotEmpty()) {

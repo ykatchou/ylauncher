@@ -72,6 +72,9 @@ fun SettingsScreen(
     val recentAppsCount by prefsRepository.recentAppsCount.collectAsState(initial = 0)
     val panelNames by prefsRepository.panelNames.collectAsState(initial = listOf("Perso", "Pro"))
     val autoLaunchDelay by prefsRepository.autoLaunchDelay.collectAsState(initial = 0f)
+    val showNotifBubble by prefsRepository.showNotifBubble.collectAsState(initial = true)
+    val showNotifPreview by prefsRepository.showNotifPreview.collectAsState(initial = true)
+    val showNotifBadge by prefsRepository.showNotifBadge.collectAsState(initial = true)
     val activePanel by prefsRepository.activePanel.collectAsState(initial = 0)
     val halTapRaw by prefsRepository.halTapAction.collectAsState(initial = "ASSISTANT;;ASSISTANT")
     val halLongPressRaw by prefsRepository.halLongPressAction.collectAsState(initial = "SETTINGS;;SETTINGS")
@@ -193,6 +196,34 @@ fun SettingsScreen(
                     steps = 7,
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader("Notifications")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsToggle(
+                title = "Notification bubble",
+                subtitle = "Show notifications next to the clock",
+                checked = showNotifBubble,
+                onCheckedChange = { scope.launch { prefsRepository.setShowNotifBubble(it) } },
+            )
+
+            SettingsToggle(
+                title = "Notification preview",
+                subtitle = "Show notification text below app name",
+                checked = showNotifPreview,
+                onCheckedChange = { scope.launch { prefsRepository.setShowNotifPreview(it) } },
+            )
+
+            SettingsToggle(
+                title = "Notification badge",
+                subtitle = "Show count badge on app icon",
+                checked = showNotifBadge,
+                onCheckedChange = { scope.launch { prefsRepository.setShowNotifBadge(it) } },
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))

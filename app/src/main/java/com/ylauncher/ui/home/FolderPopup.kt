@@ -66,6 +66,7 @@ fun FolderPopup(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
+            modifier = Modifier.fillMaxWidth(0.95f),
             shape = MaterialTheme.shapes.extraLarge,
             tonalElevation = 6.dp,
             color = MaterialTheme.colorScheme.surface,
@@ -194,21 +195,21 @@ private fun FolderAppRow(
             )
             Spacer(modifier = Modifier.width(14.dp))
         }
-        Text(
-            text = folderApp.displayName,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        if (notifDisplayText != null) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = notifDisplayText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 8.dp),
+                text = folderApp.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            if (notifDisplayText != null) {
+                Text(
+                    text = notifDisplayText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

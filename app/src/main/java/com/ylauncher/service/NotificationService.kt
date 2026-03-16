@@ -11,47 +11,45 @@ class NotificationService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
-        val extras = sbn.notification.extras
-        val title = extras.getCharSequence("android.title")?.toString() ?: ""
-        val text = extras.getCharSequence("android.text")?.toString() ?: ""
-        if (title.isBlank() && text.isBlank()) return
-
-        val notification = AppNotification(
-            packageName = sbn.packageName,
-            title = title,
-            text = text,
-            timestamp = sbn.postTime,
-            notificationKey = sbn.key,
-        )
-        val current = _notifications.value.toMutableMap()
-        current[sbn.packageName] = notification
-        _notifications.value = current
+        reseedNotifications()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         sbn ?: return
-        val current = _notifications.value.toMutableMap()
-        current.remove(sbn.packageName)
-        _notifications.value = current
+        reseedNotifications()
     }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
         instance = this
-        // Seed with existing notifications
+        reseedNotifications()
+    }
+
+    private fun reseedNotifications() {
         try {
+            // Group by package to get counts and pick the most recent notification
+            val grouped = activeNotifications
+                .filter { sbn ->
+                    val extras = sbn.notification.extras
+                    val title = extras.getCharSequence("android.title")?.toString() ?: ""
+                    val text = extras.getCharSequence("android.text")?.toString() ?: ""
+                    title.isNotBlank() || text.isNotBlank()
+                }
+                .groupBy { it.packageName }
+
             val current = mutableMapOf<String, AppNotification>()
-            for (sbn in activeNotifications) {
-                val extras = sbn.notification.extras
+            for ((pkg, sbns) in grouped) {
+                val latest = sbns.maxBy { it.postTime }
+                val extras = latest.notification.extras
                 val title = extras.getCharSequence("android.title")?.toString() ?: ""
                 val text = extras.getCharSequence("android.text")?.toString() ?: ""
-                if (title.isBlank() && text.isBlank()) continue
-                current[sbn.packageName] = AppNotification(
-                    packageName = sbn.packageName,
+                current[pkg] = AppNotification(
+                    packageName = pkg,
                     title = title,
                     text = text,
-                    timestamp = sbn.postTime,
-                    notificationKey = sbn.key,
+                    timestamp = latest.postTime,
+                    notificationKey = latest.key,
+                    count = sbns.size,
                 )
             }
             _notifications.value = current
@@ -69,6 +67,10 @@ class NotificationService : NotificationListenerService() {
 
         private val _notifications = MutableStateFlow<Map<String, AppNotification>>(emptyMap())
         val notifications: StateFlow<Map<String, AppNotification>> = _notifications.asStateFlow()
+
+        fun reseed() {
+            instance?.reseedNotifications()
+        }
 
         fun dismiss(packageName: String) {
             val key = _notifications.value[packageName]?.notificationKey ?: return

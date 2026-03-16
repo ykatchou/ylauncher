@@ -49,6 +49,9 @@ class PrefsRepository @Inject constructor(
         val HAL_LONG_PRESS_ACTION = stringPreferencesKey("hal_long_press_action")
         val HAL_DOUBLE_TAP_ACTION = stringPreferencesKey("hal_double_tap_action")
         val AUTO_LAUNCH_DELAY = intPreferencesKey("auto_launch_delay")
+        val SHOW_NOTIF_BUBBLE = booleanPreferencesKey("show_notif_bubble")
+        val SHOW_NOTIF_PREVIEW = booleanPreferencesKey("show_notif_preview")
+        val SHOW_NOTIF_BADGE = booleanPreferencesKey("show_notif_badge")
     }
 
     val isFirstLaunch: Flow<Boolean> = dataStore.data.map { it[FIRST_LAUNCH] ?: true }
@@ -83,6 +86,10 @@ class PrefsRepository @Inject constructor(
 
     // Stored as tenths of a second (0–50 = 0.0–5.0s), default 10 = 1.0s
     val autoLaunchDelay: Flow<Float> = dataStore.data.map { (it[AUTO_LAUNCH_DELAY] ?: 10) / 10f }
+
+    val showNotifBubble: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_BUBBLE] ?: true }
+    val showNotifPreview: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_PREVIEW] ?: true }
+    val showNotifBadge: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_BADGE] ?: true }
 
     val halTapAction: Flow<String> = dataStore.data.map { it[HAL_TAP_ACTION] ?: "ASSISTANT;;ASSISTANT" }
     val halLongPressAction: Flow<String> = dataStore.data.map { it[HAL_LONG_PRESS_ACTION] ?: "SETTINGS;;SETTINGS" }
@@ -180,6 +187,18 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setAutoLaunchDelay(tenths: Int) {
         dataStore.edit { it[AUTO_LAUNCH_DELAY] = tenths.coerceIn(0, 50) }
+    }
+
+    suspend fun setShowNotifBubble(value: Boolean) {
+        dataStore.edit { it[SHOW_NOTIF_BUBBLE] = value }
+    }
+
+    suspend fun setShowNotifPreview(value: Boolean) {
+        dataStore.edit { it[SHOW_NOTIF_PREVIEW] = value }
+    }
+
+    suspend fun setShowNotifBadge(value: Boolean) {
+        dataStore.edit { it[SHOW_NOTIF_BADGE] = value }
     }
 
     suspend fun setHalDoubleTapAction(panelId: Int, action: String) {

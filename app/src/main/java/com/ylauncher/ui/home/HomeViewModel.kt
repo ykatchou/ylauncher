@@ -86,6 +86,13 @@ class HomeViewModel @Inject constructor(
     val showClock = prefsRepository.showClock
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val showNotifBubble = prefsRepository.showNotifBubble
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val showNotifPreview = prefsRepository.showNotifPreview
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val showNotifBadge = prefsRepository.showNotifBadge
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val swipeLeftEnabled = prefsRepository.swipeLeftEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
