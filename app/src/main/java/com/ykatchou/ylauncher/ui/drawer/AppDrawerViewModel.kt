@@ -31,9 +31,6 @@ class AppDrawerViewModel @Inject constructor(
     val autoShowKeyboard = prefsRepository.autoShowKeyboard
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val leftHandMode = prefsRepository.leftHandMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
     val hiddenApps = prefsRepository.hiddenApps
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 

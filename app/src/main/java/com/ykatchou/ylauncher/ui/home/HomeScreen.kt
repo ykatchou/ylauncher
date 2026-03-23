@@ -12,8 +12,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
@@ -85,11 +87,14 @@ import com.ykatchou.ylauncher.util.openCameraApp
 import com.ykatchou.ylauncher.util.openDialerApp
 import com.ykatchou.ylauncher.util.showToast
 import com.ykatchou.ylauncher.util.uninstallApp
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import kotlin.math.abs
 
 private const val SWIPE_THRESHOLD = 100f
 private const val ONE_WEEK_MS = 7L * 24 * 60 * 60 * 1000
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     onNavigateToAbout: () -> Unit,
@@ -139,6 +144,13 @@ fun HomeScreen(
         } catch (_: Exception) { }
         // Also reseed if already connected
         NotificationService.reseed()
+    }
+
+    // Prompt for usage stats permission if suggested/recent apps are enabled
+    LaunchedEffect(Unit) {
+        if (!viewModel.hasUsageStatsPermission()) {
+            viewModel.requestUsageStatsPermission()
+        }
     }
 
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
@@ -297,7 +309,9 @@ fun HomeScreen(
                                 )
                         )
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.Center,
                         ) {
                             favorites.forEach { favorite ->
@@ -345,36 +359,6 @@ fun HomeScreen(
                                 }
                             }
 
-                            val suggestedApps by viewModel.suggestedApps.collectAsState()
-                            if (suggestedApps.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                suggestedApps.forEach { app ->
-                                    FavoriteItem(
-                                        appInfo = app,
-                                        displayName = app.appLabel,
-                                        onClick = {
-                                            AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
-                                        },
-                                        modifier = Modifier.alpha(0.6f),
-                                    )
-                                }
-                            }
-
-                            val recentApps by viewModel.recentApps.collectAsState()
-                            if (recentApps.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                recentApps.forEach { app ->
-                                    FavoriteItem(
-                                        appInfo = app,
-                                        displayName = app.appLabel,
-                                        onClick = {
-                                            AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
-                                        },
-                                        modifier = Modifier.alpha(0.4f),
-                                    )
-                                }
-                            }
-
                             if (showCoffeeFab) {
                                 FavoriteItem(
                                     appInfo = null,
@@ -399,8 +383,10 @@ fun HomeScreen(
                         }
                     }
 
-                    // Right: Widgets column
-                    if (homeWidgetIds.isNotEmpty()) {
+                    // Right: Widgets + Suggested/Recent apps
+                    val suggestedApps by viewModel.suggestedApps.collectAsState()
+                    val recentApps by viewModel.recentApps.collectAsState()
+                    if (homeWidgetIds.isNotEmpty() || suggestedApps.isNotEmpty() || recentApps.isNotEmpty()) {
                         Column(
                             modifier = Modifier
                                 .fillMaxHeight()
@@ -418,6 +404,34 @@ fun HomeScreen(
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
                                 )
+                            }
+                            val allSuggestedRecent = suggestedApps + recentApps
+                            if (allSuggestedRecent.isNotEmpty()) {
+                                if (homeWidgetIds.isNotEmpty()) Spacer(modifier = Modifier.height(12.dp))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.End,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    allSuggestedRecent.forEach { app ->
+                                        val isSuggested = app in suggestedApps
+                                        val bitmap = remember(app.icon) {
+                                            app.icon?.toBitmap(width = 48, height = 48)?.asImageBitmap()
+                                        }
+                                        if (bitmap != null) {
+                                            Image(
+                                                bitmap = bitmap,
+                                                contentDescription = app.appLabel,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .alpha(if (isSuggested) 0.7f else 0.5f)
+                                                    .clickable {
+                                                        AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                                    },
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

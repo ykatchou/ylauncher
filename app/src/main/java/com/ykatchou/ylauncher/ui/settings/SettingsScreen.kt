@@ -65,7 +65,6 @@ fun SettingsScreen(
 
     val showClock by prefsRepository.showClock.collectAsState(initial = true)
     val autoShowKeyboard by prefsRepository.autoShowKeyboard.collectAsState(initial = true)
-    val leftHandMode by prefsRepository.leftHandMode.collectAsState(initial = false)
     val swipeLeftEnabled by prefsRepository.swipeLeftEnabled.collectAsState(initial = true)
     val swipeRightEnabled by prefsRepository.swipeRightEnabled.collectAsState(initial = true)
     val swipeLeftName by prefsRepository.swipeLeftName.collectAsState(initial = "Camera")
@@ -126,12 +125,6 @@ fun SettingsScreen(
                 onCheckedChange = { scope.launch { prefsRepository.setShowClock(it) } },
             )
 
-            SettingsToggle(
-                title = "Left-hand mode",
-                subtitle = "Move alphabet sidebar to the left",
-                checked = leftHandMode,
-                onCheckedChange = { scope.launch { prefsRepository.setLeftHandMode(it) } },
-            )
 
             // Text size slider — writes only on release
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
