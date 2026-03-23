@@ -64,7 +64,6 @@ import com.ykatchou.ylauncher.data.model.AppInfo
 import com.ykatchou.ylauncher.data.model.FavoriteApp
 import com.ykatchou.ylauncher.data.repository.AppRepository
 import com.ykatchou.ylauncher.service.NotificationService
-import com.ykatchou.ylauncher.service.ScreenLockService
 import com.ykatchou.ylauncher.billing.BillingManager
 import com.ykatchou.ylauncher.billing.BillingState
 import com.ykatchou.ylauncher.ui.components.AllAppsButton
@@ -210,9 +209,6 @@ fun HomeScreen(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onDoubleTap = {
-                            ScreenLockService.instance?.lockScreen()
-                        },
                         onLongPress = { offset ->
                             with(density) {
                                 menuOffset = DpOffset(offset.x.toDp(), offset.y.toDp())

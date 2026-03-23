@@ -3,7 +3,6 @@ package com.ykatchou.ylauncher.ui.hal
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
-import com.ykatchou.ylauncher.service.ScreenLockService
 import com.ykatchou.ylauncher.util.AppLauncher
 import com.ykatchou.ylauncher.util.FlashlightHelper
 import com.ykatchou.ylauncher.util.expandNotificationDrawer
@@ -32,7 +31,6 @@ object HalActionExecutor {
                     context.showToast("No assistant found")
                 }
             }
-            HalAction.LOCK_SCREEN -> ScreenLockService.instance?.lockScreen()
             HalAction.NOTIFICATIONS -> context.expandNotificationDrawer()
             HalAction.CAMERA -> context.openCameraApp()
             HalAction.PHONE -> context.openDialerApp()

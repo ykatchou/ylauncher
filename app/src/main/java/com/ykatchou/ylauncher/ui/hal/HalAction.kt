@@ -5,7 +5,6 @@ enum class HalAction(val label: String) {
     ASSISTANT("Open assistant"),
     APP_DRAWER("Open app drawer"),
     SETTINGS("Open settings"),
-    LOCK_SCREEN("Lock screen"),
     NOTIFICATIONS("Notification shade"),
     CAMERA("Open camera"),
     PHONE("Open phone"),

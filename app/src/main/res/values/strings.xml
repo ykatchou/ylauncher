@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">yLauncher</string>
-    <string name="accessibility_service_description">Used to lock your screen with a double-tap gesture. This service does not collect or share any data.</string>
 </resources>

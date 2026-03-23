@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0" stop-color="#1a1a2e"/>
+      <stop offset="1" stop-color="#0a0a0c"/>
+    </radialGradient>
+    <linearGradient id="iconBg" x1="80" y1="100" x2="380" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1a1a2e"/>
+      <stop offset="1" stop-color="#0d0d15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#bgGrad)"/>
+
+  <!-- Icon background (rounded square) -->
+  <rect x="100" y="110" width="280" height="280" rx="60" fill="url(#iconBg)" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.5"/>
+
+  <!-- Icon content (panels design scaled to fit in the 280x280 box at offset 100,110) -->
+  <!-- Scale: 280/512 = 0.547, offset x=100, y=110 -->
+  <g transform="translate(100,110) scale(0.547)">
+    <!-- Divider line between panels -->
+    <line x1="256" y1="110" x2="256" y2="402" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+
+    <!-- Left panel label -->
+    <rect x="90" y="120" width="70" height="14" rx="7" fill="#FF6B35" opacity="0.7"/>
+    <!-- Left app lines -->
+    <circle cx="105" cy="178" r="10" fill="#FF6B35" opacity="0.5"/>
+    <rect x="125" y="170" width="100" height="16" rx="8" fill="#FFFFFF" opacity="0.7"/>
+    <circle cx="105" cy="224" r="10" fill="#FF6B35" opacity="0.35"/>
+    <rect x="125" y="216" width="80" height="16" rx="8" fill="#FFFFFF" opacity="0.45"/>
+    <circle cx="105" cy="270" r="10" fill="#FF6B35" opacity="0.25"/>
+    <rect x="125" y="262" width="95" height="16" rx="8" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="105" cy="316" r="10" fill="#FF6B35" opacity="0.15"/>
+    <rect x="125" y="308" width="65" height="16" rx="8" fill="#FFFFFF" opacity="0.2"/>
+
+    <!-- Right panel label -->
+    <rect x="290" y="120" width="55" height="14" rx="7" fill="#E63946" opacity="0.7"/>
+    <!-- Right app lines -->
+    <circle cx="305" cy="178" r="10" fill="#E63946" opacity="0.5"/>
+    <rect x="325" y="170" width="85" height="16" rx="8" fill="#FFFFFF" opacity="0.7"/>
+    <circle cx="305" cy="224" r="10" fill="#E63946" opacity="0.35"/>
+    <rect x="325" y="216" width="105" height="16" rx="8" fill="#FFFFFF" opacity="0.45"/>
+    <circle cx="305" cy="270" r="10" fill="#E63946" opacity="0.25"/>
+    <rect x="325" y="262" width="70" height="16" rx="8" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="305" cy="316" r="10" fill="#E63946" opacity="0.15"/>
+    <rect x="325" y="308" width="90" height="16" rx="8" fill="#FFFFFF" opacity="0.2"/>
+
+    <!-- Bottom dots -->
+    <circle cx="236" cy="385" r="8" fill="#FF6B35" opacity="0.9"/>
+    <circle cx="268" cy="385" r="6" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+
+  <!-- App name -->
+  <text x="440" y="220" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="72" font-weight="700" fill="#FFFFFF" letter-spacing="-1">yLauncher</text>
+
+  <!-- Tagline -->
+  <text x="440" y="275" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="26" font-weight="400" fill="#999999">Fast. Minimal. Yours.</text>
+
+  <!-- Features line -->
+  <text x="440" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="400" fill="#555555">Gestures · Panels · Folders · Widgets · No ads · Open source</text>
+</svg>

@@ -4,32 +4,30 @@
 yLauncher
 
 ## Short description (80 chars max)
-A minimalist, gesture-driven Android launcher with panels, folders & widgets.
+A fast, minimalist Android launcher with gestures, panels, folders & widgets.
 
 ## Full description
-yLauncher is a minimalist, gesture-driven Android launcher designed for speed and simplicity. Inspired by OLauncher and Niagara Launcher, it puts your favorite apps front and center with beautiful typography and zero clutter.
+Tired of cluttered home screens? yLauncher is a minimalist, text-based Android launcher that puts your favorite apps front and center — no distractions, no bloat.
+
+Organize your life with multiple panels (Personal, Work, or whatever you need), group apps into folders with custom emoji icons, and navigate with intuitive swipe gestures.
 
 Features:
 
-- Favorite apps displayed in a clean, text-based list with app icons
-- Multiple panels (e.g. Personal / Work) to organize your apps
-- Inline folders with custom emoji icons
-- Configurable swipe gestures (left, right, up, down)
-- Magic button with tap, long-press, and double-tap actions per panel
+- Clean, text-based home screen with app icons
+- Multiple panels to separate work and personal apps
+- Folders with custom emoji icons
+- Swipe gestures for quick actions
+- Magic button with tap, long-press, and double-tap shortcuts
 - Live clock with notification bubbles
-- Notification badges and inline previews on favorite apps
-- Swipe-to-dismiss notifications
-- Full app drawer with instant search and auto-launch
-- Alphabet sidebar for quick navigation
-- Home screen widgets support
-- Suggested and recent apps based on your usage
-- Configurable text size, left-hand mode, and dark mode support
-- Double-tap to lock screen
-- Completely free with no ads
+- Notification badges and inline previews
+- Swipe to dismiss notifications
+- App drawer with instant search and auto-launch
+- Alphabet sidebar for fast scrolling
+- Home screen widgets
+- Suggested and recent apps
+- Left-hand mode, dark mode, configurable text size
 
-yLauncher stores all your data locally on your device. No tracking, no analytics, no cloud — your launcher, your data.
-
-Open source under GPL v3.
+Free, open source, no ads, no tracking. All your data stays on your device.
 
 ## Category
 Personalization
