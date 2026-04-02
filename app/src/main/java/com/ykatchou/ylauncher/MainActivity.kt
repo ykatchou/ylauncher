@@ -56,6 +56,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingWidgetId = savedInstanceState?.getInt(
+            "pendingWidgetId", AppWidgetManager.INVALID_APPWIDGET_ID
+        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
         widgetConfigLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -143,6 +146,13 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         billingManager.destroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (pendingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            outState.putInt("pendingWidgetId", pendingWidgetId)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
