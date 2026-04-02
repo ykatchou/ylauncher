@@ -71,20 +71,14 @@ class HomeViewModel @Inject constructor(
         allFavorites,
         appRepository.appList,
         prefsRepository.recentAppsCount,
-        prefsRepository.suggestionCount,
-    ) { favs, _, recentCount, suggCount ->
+        suggestedApps,
+    ) { favs, _, recentCount, suggested ->
         if (recentCount == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
-        val suggested = if (suggCount > 0) {
-            UsageStatsHelper.getTopApps(context, appRepository, count = suggCount + 10)
-                .filter { it.packageName !in favPackages }
-                .take(suggCount)
-                .map { it.packageName }
-                .toSet()
-        } else emptySet()
+        val suggestedPackages = suggested.map { it.packageName }.toSet()
         UsageStatsHelper.getRecentApps(
             context, appRepository, count = recentCount,
-            excludePackages = favPackages + suggested,
+            excludePackages = favPackages + suggestedPackages,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
