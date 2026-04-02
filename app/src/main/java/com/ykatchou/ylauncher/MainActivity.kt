@@ -24,7 +24,7 @@ import com.ykatchou.ylauncher.ui.settings.SettingsScreen
 import com.ykatchou.ylauncher.ui.theme.YLauncherTheme
 import com.ykatchou.ylauncher.widget.LauncherWidgetHost
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -195,7 +195,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveWidget(widgetId: Int) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             prefsRepository.addHomeWidgetId(widgetId)
         }
         pendingWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
