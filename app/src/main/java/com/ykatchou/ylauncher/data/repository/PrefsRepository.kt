@@ -180,7 +180,7 @@ class PrefsRepository @Inject constructor(
     }
 
     suspend fun setPanelNames(names: List<String>) {
-        dataStore.edit { it[PANEL_NAMES] = names.joinToString("|") }
+        dataStore.edit { it[PANEL_NAMES] = names.map { name -> name.replace("|", "") }.joinToString("|") }
     }
 
     suspend fun setHalTapAction(panelId: Int, action: String) {
