@@ -18,6 +18,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,6 +149,8 @@ class HomeViewModel @Inject constructor(
         raw.split(";;").getOrElse(panel) { "APP_DRAWER" }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "APP_DRAWER")
 
+    private val dbWriteMutex = Mutex()
+
     private val _isDrawerOpen = MutableStateFlow(false)
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
 
@@ -213,17 +217,19 @@ class HomeViewModel @Inject constructor(
 
     fun reimportFromUsageStats() {
         viewModelScope.launch {
-            val panelId = activePanel.value
             val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = 6)
             if (topApps.isNotEmpty()) {
-                favoriteDao.deleteByPanel(panelId)
-                val otherMaxPos = favoriteDao.getAllFavoritesOnce()
-                    .maxOfOrNull { it.position } ?: -1
-                val basePos = otherMaxPos + 1
-                val favorites = topApps.mapIndexed { index, app ->
-                    FavoriteApp(basePos + index, app.packageName, app.activityClassName, app.appLabel, app.userHandle.toString(), panelId = panelId)
+                dbWriteMutex.withLock {
+                    val panelId = activePanel.value
+                    favoriteDao.deleteByPanel(panelId)
+                    val otherMaxPos = favoriteDao.getAllFavoritesOnce()
+                        .maxOfOrNull { it.position } ?: -1
+                    val basePos = otherMaxPos + 1
+                    val favorites = topApps.mapIndexed { index, app ->
+                        FavoriteApp(basePos + index, app.packageName, app.activityClassName, app.appLabel, app.userHandle.toString(), panelId = panelId)
+                    }
+                    favoriteDao.insertAll(favorites)
                 }
-                favoriteDao.insertAll(favorites)
             }
         }
     }
@@ -250,16 +256,18 @@ class HomeViewModel @Inject constructor(
 
     fun saveFavorites(favorites: List<FavoriteApp>) {
         viewModelScope.launch {
-            val panelId = activePanel.value
-            // Delete only this panel's favorites
-            favoriteDao.deleteByPanel(panelId)
-            // Compute a safe starting position that won't collide with other panels
-            val otherMaxPos = favoriteDao.getAllFavoritesOnce()
-                .maxOfOrNull { it.position } ?: -1
-            val basePos = otherMaxPos + 1
-            favoriteDao.insertAll(favorites.mapIndexed { index, fav ->
-                fav.copy(position = basePos + index, panelId = panelId)
-            })
+            dbWriteMutex.withLock {
+                val panelId = activePanel.value
+                // Delete only this panel's favorites
+                favoriteDao.deleteByPanel(panelId)
+                // Compute a safe starting position that won't collide with other panels
+                val otherMaxPos = favoriteDao.getAllFavoritesOnce()
+                    .maxOfOrNull { it.position } ?: -1
+                val basePos = otherMaxPos + 1
+                favoriteDao.insertAll(favorites.mapIndexed { index, fav ->
+                    fav.copy(position = basePos + index, panelId = panelId)
+                })
+            }
         }
     }
 
