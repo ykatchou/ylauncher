@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
@@ -26,6 +28,9 @@ class AppRepository @Inject constructor(
     private val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
     private val packageManager = context.packageManager
 
+    private val callbackThread = HandlerThread("AppRepositoryCallbacks").also { it.start() }
+    private val callbackHandler = Handler(callbackThread.looper)
+
     private val _appList = MutableStateFlow<List<AppInfo>>(emptyList())
     val appList: StateFlow<List<AppInfo>> = _appList.asStateFlow()
 
@@ -38,7 +43,7 @@ class AppRepository @Inject constructor(
     }
 
     fun registerCallback() {
-        launcherApps.registerCallback(callback)
+        launcherApps.registerCallback(callback, callbackHandler)
     }
 
     fun unregisterCallback() {

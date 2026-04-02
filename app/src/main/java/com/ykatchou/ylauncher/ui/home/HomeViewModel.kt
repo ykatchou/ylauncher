@@ -16,6 +16,7 @@ import com.ykatchou.ylauncher.util.UsageStatsHelper
 import com.ykatchou.ylauncher.widget.LauncherWidgetHost
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -150,7 +151,7 @@ class HomeViewModel @Inject constructor(
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             appRepository.refreshApps()
             appRepository.registerCallback()
             autoPopulateFavoritesIfNeeded()
