@@ -47,3 +47,20 @@ test-all: test test-device
 # Clean build artifacts
 clean:
     {{ gradlew }} clean
+
+# Build signed release bundle (AAB) for Play Store
+release:
+    {{ gradlew }} bundleRelease
+    @echo "Release bundle: app/build/outputs/bundle/release/app-release.aab"
+
+# Bump versionName to the given value and auto-increment versionCode
+# Usage: just bump 1.6.0
+bump version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    f="app/build.gradle.kts"
+    current_code=$(grep -E '^\s+versionCode\s*=' "$f" | grep -oE '[0-9]+')
+    new_code=$((current_code + 1))
+    sed -i '' "s/versionCode = ${current_code}/versionCode = ${new_code}/" "$f"
+    sed -i '' 's/versionName = "[^"]*"/versionName = "{{ version }}"/' "$f"
+    echo "Bumped: versionName={{ version }}, versionCode=${new_code}"
