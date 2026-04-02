@@ -15,6 +15,7 @@ object HalActionExecutor {
     fun execute(
         context: Context,
         actionKey: String,
+        assistantPackage: String = "",
         onOpenDrawer: () -> Unit = {},
         onOpenSettings: () -> Unit = {},
         onEditFavorites: () -> Unit = {},
@@ -26,6 +27,7 @@ object HalActionExecutor {
             HalAction.SETTINGS -> onOpenSettings()
             HalAction.EDIT_FAVORITES -> onEditFavorites()
             HalAction.ASSISTANT -> {
+                if (assistantPackage.isNotBlank() && AppLauncher.launch(context, assistantPackage)) return
                 val intent = Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 try { context.startActivity(intent) } catch (_: Exception) {
                     context.showToast("No assistant found")

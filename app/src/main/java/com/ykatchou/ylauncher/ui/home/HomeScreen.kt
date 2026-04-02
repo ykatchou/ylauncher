@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.res.Configuration
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.provider.MediaStore
@@ -16,8 +17,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -45,7 +49,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,7 +57,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -153,11 +158,11 @@ fun HomeScreen(
         }
     }
 
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val widgetColumnWidthDp = (screenWidthDp * 0.45f).toInt()
 
-    var totalDragX by remember { mutableFloatStateOf(0f) }
-    var totalDragY by remember { mutableFloatStateOf(0f) }
     var showEditFavorites by remember { mutableStateOf(false) }
     var showBackgroundMenu by remember { mutableStateOf(false) }
     var menuOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -177,47 +182,48 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(swipeLeftEnabled, swipeRightEnabled) {
-                    detectDragGestures(
-                        onDragStart = {
-                            totalDragX = 0f
-                            totalDragY = 0f
-                        },
-                        onDrag = { _, dragAmount ->
-                            totalDragX += dragAmount.x
-                            totalDragY += dragAmount.y
-                        },
-                        onDragEnd = {
-                            val absX = abs(totalDragX)
-                            val absY = abs(totalDragY)
+                    awaitEachGesture {
+                        var totalDragX = 0f
+                        var totalDragY = 0f
+                        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        do {
+                            val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                            event.changes.forEach { change ->
+                                totalDragX += change.positionChange().x
+                                totalDragY += change.positionChange().y
+                            }
+                        } while (event.changes.any { it.pressed })
 
-                            if (absX > absY && absX > SWIPE_THRESHOLD) {
-                                // Horizontal swipe
-                                if (totalDragX > 0 && swipeRightEnabled) {
-                                    // Swipe right → Phone (or configured app)
-                                    if (swipeRightPackage.isNotBlank()) {
-                                        AppLauncher.launch(context, swipeRightPackage, swipeRightActivity.ifBlank { null })
-                                    } else {
-                                        context.openDialerApp()
-                                    }
-                                } else if (totalDragX < 0 && swipeLeftEnabled) {
-                                    // Swipe left → Camera (or configured app)
-                                    if (swipeLeftPackage.isNotBlank()) {
-                                        AppLauncher.launch(context, swipeLeftPackage, swipeLeftActivity.ifBlank { null })
-                                    } else {
-                                        context.openCameraApp()
-                                    }
-                                }
-                            } else if (absY > absX && absY > SWIPE_THRESHOLD) {
-                                if (totalDragY > 0) {
-                                    // Swipe down → notification shade
-                                    context.expandNotificationDrawer()
+                        val absX = abs(totalDragX)
+                        val absY = abs(totalDragY)
+
+                        if (absX > absY && absX > SWIPE_THRESHOLD) {
+                            // Horizontal swipe
+                            if (totalDragX > 0 && swipeRightEnabled) {
+                                // Swipe right → Phone (or configured app)
+                                if (swipeRightPackage.isNotBlank()) {
+                                    AppLauncher.launch(context, swipeRightPackage, swipeRightActivity.ifBlank { null })
                                 } else {
-                                    // Swipe up → app drawer
-                                    viewModel.openDrawer()
+                                    context.openDialerApp()
+                                }
+                            } else if (totalDragX < 0 && swipeLeftEnabled) {
+                                // Swipe left → Camera (or configured app)
+                                if (swipeLeftPackage.isNotBlank()) {
+                                    AppLauncher.launch(context, swipeLeftPackage, swipeLeftActivity.ifBlank { null })
+                                } else {
+                                    context.openCameraApp()
                                 }
                             }
-                        },
-                    )
+                        } else if (absY > absX && absY > SWIPE_THRESHOLD) {
+                            if (totalDragY > 0) {
+                                // Swipe down → notification shade
+                                context.expandNotificationDrawer()
+                            } else {
+                                // Swipe up → app drawer
+                                viewModel.openDrawer()
+                            }
+                        }
+                    }
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(
@@ -236,7 +242,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(vertical = 48.dp),
+                    .padding(vertical = if (isLandscape) 8.dp else 48.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Top: Clock + notification bubble
@@ -244,6 +250,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(if (isLandscape) Modifier.heightIn(max = 60.dp) else Modifier)
                             .height(IntrinsicSize.Min),
                         verticalAlignment = Alignment.Top,
                     ) {
@@ -308,13 +315,11 @@ fun HomeScreen(
                                     )
                                 )
                         )
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState()),
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                         ) {
-                            favorites.forEach { favorite ->
+                            items(favorites, key = { it.position }) { favorite ->
                                 if (favorite.isFolder && favorite.folderId != null) {
                                     FavoriteItem(
                                         appInfo = null,
@@ -360,25 +365,27 @@ fun HomeScreen(
                             }
 
                             if (showCoffeeFab) {
-                                FavoriteItem(
-                                    appInfo = null,
-                                    displayName = "Buy me a coffee",
-                                    iconEmoji = "☕",
-                                    isFolder = true,
-                                    onClick = {
-                                        if (billingState == BillingState.READY) {
-                                            (context as? Activity)?.let {
-                                                billingManager.launchTipPurchase(it)
+                                item {
+                                    FavoriteItem(
+                                        appInfo = null,
+                                        displayName = "Buy me a coffee",
+                                        iconEmoji = "☕",
+                                        isFolder = true,
+                                        onClick = {
+                                            if (billingState == BillingState.READY) {
+                                                (context as? Activity)?.let {
+                                                    billingManager.launchTipPurchase(it)
+                                                }
+                                            } else {
+                                                context.startActivity(
+                                                    Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://ko-fi.com/ykatchou"))
+                                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                )
                                             }
-                                        } else {
-                                            context.startActivity(
-                                                Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://ko-fi.com/ykatchou"))
-                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            )
-                                        }
-                                    },
-                                    modifier = Modifier.alpha(0.5f),
-                                )
+                                        },
+                                        modifier = Modifier.alpha(0.5f),
+                                    )
+                                }
                             }
                         }
                     }
@@ -491,6 +498,7 @@ fun HomeScreen(
                             onClick = {
                                 HalActionExecutor.execute(
                                     context, halTapAction,
+                                    assistantPackage = halAssistantPackage,
                                     onOpenDrawer = { viewModel.openDrawer() },
                                     onOpenSettings = onNavigateToSettings,
                                     onEditFavorites = { showEditFavorites = true },
@@ -499,6 +507,7 @@ fun HomeScreen(
                             onLongClick = {
                                 HalActionExecutor.execute(
                                     context, halLongPressAction,
+                                    assistantPackage = halAssistantPackage,
                                     onOpenDrawer = { viewModel.openDrawer() },
                                     onOpenSettings = onNavigateToSettings,
                                     onEditFavorites = { showEditFavorites = true },
@@ -507,6 +516,7 @@ fun HomeScreen(
                             onDoubleTap = {
                                 HalActionExecutor.execute(
                                     context, halDoubleTapAction,
+                                    assistantPackage = halAssistantPackage,
                                     onOpenDrawer = { viewModel.openDrawer() },
                                     onOpenSettings = onNavigateToSettings,
                                     onEditFavorites = { showEditFavorites = true },
