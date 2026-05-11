@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -74,7 +75,7 @@ class PrefsRepository @Inject constructor(
 
     val hiddenApps: Flow<Set<String>> = dataStore.data.map { prefs ->
         prefs[HIDDEN_APPS]?.split("|")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
-    }
+    }.distinctUntilChanged()
 
     val textSizeScale: Flow<Float> = dataStore.data.map { prefs ->
         (prefs[TEXT_SIZE_SCALE] ?: 100) / 100f  // stored as int 80-140, returned as 0.8-1.4
@@ -87,14 +88,14 @@ class PrefsRepository @Inject constructor(
     val activePanel: Flow<Int> = dataStore.data.map { it[ACTIVE_PANEL] ?: 0 }
     val panelNames: Flow<List<String>> = dataStore.data.map { prefs ->
         prefs[PANEL_NAMES]?.split("|")?.filter { it.isNotBlank() } ?: listOf("Perso", "Pro")
-    }
+    }.distinctUntilChanged()
 
     // Stored as tenths of a second (0–50 = 0.0–5.0s), default 10 = 1.0s
     val autoLaunchDelay: Flow<Float> = dataStore.data.map { (it[AUTO_LAUNCH_DELAY] ?: 10) / 10f }
 
     val homeWidgetIds: Flow<List<Int>> = dataStore.data.map { prefs ->
         prefs[HOME_WIDGET_IDS]?.split("|")?.mapNotNull { it.toIntOrNull() }?.filter { it > 0 } ?: emptyList()
-    }
+    }.distinctUntilChanged()
 
     val showNotifBubble: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_BUBBLE] ?: true }
     val showNotifPreview: Flow<Boolean> = dataStore.data.map { it[SHOW_NOTIF_PREVIEW] ?: true }
