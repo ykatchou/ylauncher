@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -64,7 +65,8 @@ class HomeViewModel @Inject constructor(
         val favPackages = favs.map { it.packageName }.toSet()
         val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = count + 10)
         topApps.filter { it.packageName !in favPackages }.take(count)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentApps: StateFlow<List<AppInfo>> = combine(
         allFavorites,
@@ -78,7 +80,8 @@ class HomeViewModel @Inject constructor(
             context, appRepository, count = recentCount,
             excludePackages = favPackages + suggestedPackages,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val homeWidgetIds = prefsRepository.homeWidgetIds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
