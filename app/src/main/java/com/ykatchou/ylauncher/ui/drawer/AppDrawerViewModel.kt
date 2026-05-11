@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,6 +37,10 @@ class AppDrawerViewModel @Inject constructor(
 
     val autoLaunchDelay = prefsRepository.autoLaunchDelay
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1f)
+
+    val isLoading: StateFlow<Boolean> = appRepository.appList
+        .map { it.isEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val filteredApps: StateFlow<List<AppInfo>> = combine(
         appRepository.appList,

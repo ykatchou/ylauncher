@@ -71,6 +71,7 @@ fun AppDrawerScreen(
 
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredApps by viewModel.filteredApps.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val autoShowKeyboard by viewModel.autoShowKeyboard.collectAsState()
     val hiddenApps by viewModel.hiddenApps.collectAsState()
     val autoLaunchDelay by viewModel.autoLaunchDelay.collectAsState()
@@ -206,58 +207,77 @@ fun AppDrawerScreen(
 
             // App list + alphabet sidebar
             Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 16.dp, end = 32.dp),
-                ) {
-                    items(
-                        items = filteredApps,
-                        key = { "${it.packageName}|${it.activityClassName}|${it.userHandle}" },
-                    ) { app ->
-                        AppDrawerItem(
-                            app = app,
-                            onClick = {
+                when {
+                    isLoading -> {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        )
+                    }
+                    filteredApps.isEmpty() -> {
+                        Text(
+                            text = if (searchQuery.isBlank()) "No apps found" else "No results for \"$searchQuery\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp),
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(start = 16.dp, end = 32.dp),
+                        ) {
+                            items(
+                                items = filteredApps,
+                                key = { "${it.packageName}|${it.activityClassName}|${it.userHandle}" },
+                            ) { app ->
+                                AppDrawerItem(
+                                    app = app,
+                                    onClick = {
+                                        keyboardController?.hide()
+                                        if (onAppSelected != null) {
+                                            onAppSelected(app)
+                                        } else {
+                                            AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                        }
+                                        onDismiss()
+                                    },
+                                    onAppInfo = { context.openAppInfo(app.packageName) },
+                                    onUninstall = { context.uninstallApp(app.packageName) },
+                                    onHide = { viewModel.hideApp(app) },
+                                    onAddToHome = { viewModel.addToHome(app) },
+                                )
+                            }
+                        }
+
+                        // Alphabet quick-access sidebar
+                        AlphabetSidebar(
+                            onLetterSelected = { letter ->
                                 keyboardController?.hide()
-                                if (onAppSelected != null) {
-                                    onAppSelected(app)
+                                val index = if (letter == '#') {
+                                    filteredApps.indexOfFirst { !it.appLabel.first().isLetter() }
                                 } else {
-                                    AppLauncher.launch(context, app.packageName, app.activityClassName, app.userHandle)
+                                    filteredApps.indexOfFirst {
+                                        it.appLabel.firstOrNull()?.uppercaseChar() == letter
+                                    }
                                 }
-                                onDismiss()
+                                if (index >= 0) {
+                                    scope.launch { listState.animateScrollToItem(index) }
+                                }
                             },
-                            onAppInfo = { context.openAppInfo(app.packageName) },
-                            onUninstall = { context.uninstallApp(app.packageName) },
-                            onHide = {
-                                viewModel.hideApp(app)
-                            },
-                            onAddToHome = {
-                                viewModel.addToHome(app)
-                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 2.dp),
                         )
                     }
                 }
-
-                // Alphabet quick-access sidebar
-                AlphabetSidebar(
-                    onLetterSelected = { letter ->
-                        keyboardController?.hide()
-                        val index = if (letter == '#') {
-                            filteredApps.indexOfFirst { !it.appLabel.first().isLetter() }
-                        } else {
-                            filteredApps.indexOfFirst {
-                                it.appLabel.firstOrNull()?.uppercaseChar() == letter
-                            }
-                        }
-                        if (index >= 0) {
-                            scope.launch { listState.animateScrollToItem(index) }
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 2.dp),
-                )
             }
         }
     }

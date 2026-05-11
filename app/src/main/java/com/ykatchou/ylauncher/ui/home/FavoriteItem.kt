@@ -71,10 +71,12 @@ fun FavoriteItem(
     var showMenu by remember { mutableStateOf(false) }
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30_000L)
-            now = System.currentTimeMillis()
+    if (notification != null) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(30_000L)
+                now = System.currentTimeMillis()
+            }
         }
     }
 

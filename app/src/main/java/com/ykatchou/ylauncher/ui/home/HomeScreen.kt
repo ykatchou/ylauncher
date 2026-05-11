@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -315,57 +313,59 @@ fun HomeScreen(
                                     )
                                 )
                         )
-                        LazyColumn(
+                        Box(
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
+                            contentAlignment = Alignment.Center,
                         ) {
-                            items(favorites, key = { it.position }) { favorite ->
-                                if (favorite.isFolder && favorite.folderId != null) {
-                                    FavoriteItem(
-                                        appInfo = null,
-                                        displayName = favorite.displayName,
-                                        iconEmoji = favorite.iconEmoji,
-                                        isFolder = true,
-                                        onClick = { openFolderId = favorite.folderId },
-                                        onEditFavorites = { showEditFavorites = true },
-                                        onEditFolder = { editingFolderId = favorite.folderId },
-                                        onMoveToPanel = if (panelNames.size > 1) {
-                                            { movingFavoriteToPanel = favorite }
-                                        } else null,
-                                    )
-                                } else {
-                                    val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
-                                        appRepository.findAppByPackage(favorite.packageName)
+                            Column(
+                                modifier = Modifier.verticalScroll(rememberScrollState()),
+                            ) {
+                                favorites.forEach { favorite ->
+                                    if (favorite.isFolder && favorite.folderId != null) {
+                                        FavoriteItem(
+                                            appInfo = null,
+                                            displayName = favorite.displayName,
+                                            iconEmoji = favorite.iconEmoji,
+                                            isFolder = true,
+                                            onClick = { openFolderId = favorite.folderId },
+                                            onEditFavorites = { showEditFavorites = true },
+                                            onEditFolder = { editingFolderId = favorite.folderId },
+                                            onMoveToPanel = if (panelNames.size > 1) {
+                                                { movingFavoriteToPanel = favorite }
+                                            } else null,
+                                        )
+                                    } else {
+                                        val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
+                                            appRepository.findAppByPackage(favorite.packageName)
+                                        }
+                                        FavoriteItem(
+                                            appInfo = appInfo,
+                                            displayName = favorite.displayName,
+                                            onClick = {
+                                                AppLauncher.launch(
+                                                    context,
+                                                    favorite.packageName,
+                                                    favorite.activityClassName,
+                                                )
+                                            },
+                                            notification = notifications[favorite.packageName],
+                                            showNotifPreview = showNotifPreview,
+                                            showNotifBadge = showNotifBadge,
+                                            onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
+                                            onEditFavorites = { showEditFavorites = true },
+                                            onMoveToFolder = if (allFolders.isNotEmpty()) {
+                                                { movingFavorite = favorite }
+                                            } else null,
+                                            onMoveToPanel = if (panelNames.size > 1) {
+                                                { movingFavoriteToPanel = favorite }
+                                            } else null,
+                                            onAppInfo = { context.openAppInfo(favorite.packageName) },
+                                            onUninstall = { context.uninstallApp(favorite.packageName) },
+                                        )
                                     }
-                                    FavoriteItem(
-                                        appInfo = appInfo,
-                                        displayName = favorite.displayName,
-                                        onClick = {
-                                            AppLauncher.launch(
-                                                context,
-                                                favorite.packageName,
-                                                favorite.activityClassName,
-                                            )
-                                        },
-                                        notification = notifications[favorite.packageName],
-                                        showNotifPreview = showNotifPreview,
-                                        showNotifBadge = showNotifBadge,
-                                        onDismissNotification = { NotificationService.dismiss(favorite.packageName) },
-                                        onEditFavorites = { showEditFavorites = true },
-                                        onMoveToFolder = if (allFolders.isNotEmpty()) {
-                                            { movingFavorite = favorite }
-                                        } else null,
-                                        onMoveToPanel = if (panelNames.size > 1) {
-                                            { movingFavoriteToPanel = favorite }
-                                        } else null,
-                                        onAppInfo = { context.openAppInfo(favorite.packageName) },
-                                        onUninstall = { context.uninstallApp(favorite.packageName) },
-                                    )
                                 }
-                            }
 
-                            if (showCoffeeFab) {
-                                item {
+                                if (showCoffeeFab) {
                                     FavoriteItem(
                                         appInfo = null,
                                         displayName = "Buy me a coffee",
@@ -453,10 +453,9 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Panel radio buttons
-                    Row(
+                    FlowRow(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         panelNames.forEachIndexed { index, name ->
                             val isActive = index == activePanel
