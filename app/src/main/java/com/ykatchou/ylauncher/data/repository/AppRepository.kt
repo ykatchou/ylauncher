@@ -37,21 +37,50 @@ class AppRepository @Inject constructor(
 
     private val callback = object : LauncherApps.Callback() {
         override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
-            packageName?.let { AppIconCache.evict(it) }
-            refreshApps()
+            packageName ?: return
+            AppIconCache.evict(packageName)
+            _appList.value = _appList.value.filter {
+                it.packageName != packageName || it.userHandle != user
+            }
         }
-        override fun onPackageAdded(packageName: String?, user: UserHandle?) = refreshApps()
+
+        override fun onPackageAdded(packageName: String?, user: UserHandle?) {
+            packageName ?: return
+            val profile = user ?: return
+            val newEntries = launcherApps.getActivityList(packageName, profile)
+                .map { activity ->
+                    val label = activity.label.toString()
+                    AppInfo(
+                        appLabel = label,
+                        packageName = activity.applicationInfo.packageName,
+                        activityClassName = activity.componentName.className,
+                        userHandle = profile,
+                        icon = activity.getIcon(0),
+                        normalizedLabel = normalizeText(label),
+                    )
+                }
+            if (newEntries.isNotEmpty()) {
+                val without = _appList.value.filter { it.packageName != packageName || it.userHandle != profile }
+                _appList.value = (without + newEntries).sorted()
+            }
+        }
+
         override fun onPackageChanged(packageName: String?, user: UserHandle?) {
-            packageName?.let { AppIconCache.evict(it) }
-            refreshApps()
+            packageName ?: return
+            AppIconCache.evict(packageName)
+            // Re-query just this package — icon or label may have changed
+            onPackageAdded(packageName, user)
         }
+
         override fun onPackagesAvailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) {
-            packageNames?.forEach { AppIconCache.evict(it) }
-            refreshApps()
+            packageNames?.forEach { AppIconCache.evict(it); onPackageAdded(it, user) }
         }
+
         override fun onPackagesUnavailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) {
-            packageNames?.forEach { AppIconCache.evict(it) }
-            refreshApps()
+            packageNames?.forEach { pkg ->
+                AppIconCache.evict(pkg)
+                _appList.value = _appList.value.filter { it.packageName != pkg || it.userHandle != user }
+            }
         }
     }
 
