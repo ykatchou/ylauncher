@@ -86,62 +86,22 @@ class HomeViewModel @Inject constructor(
     val homeWidgetIds = prefsRepository.homeWidgetIds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val showClock = prefsRepository.showClock
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    /** All display/swipe/HAL prefs in one snapshot — single collectAsState() in the UI. */
+    val homePrefs: StateFlow<com.ykatchou.ylauncher.data.repository.HomePrefs> =
+        prefsRepository.homePrefs
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.ykatchou.ylauncher.data.repository.HomePrefs())
 
-    val showNotifBubble = prefsRepository.showNotifBubble
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val showNotifPreview = prefsRepository.showNotifPreview
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val showNotifBadge = prefsRepository.showNotifBadge
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val showDonation = prefsRepository.showDonation
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val firstLaunchTimestamp = prefsRepository.firstLaunchTimestamp
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
-
-    val swipeLeftEnabled = prefsRepository.swipeLeftEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val swipeRightEnabled = prefsRepository.swipeRightEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val swipeLeftPackage = prefsRepository.swipeLeftPackage
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val swipeRightPackage = prefsRepository.swipeRightPackage
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val swipeLeftActivity = prefsRepository.swipeLeftActivity
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val swipeRightActivity = prefsRepository.swipeRightActivity
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val halAssistantPackage = prefsRepository.halAssistantPackage
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "com.google.android.apps.googleassistant")
-
-    // Per-panel HAL button actions
-    val halTapAction: StateFlow<String> = combine(
-        prefsRepository.halTapAction,
-        prefsRepository.activePanel,
-    ) { raw, panel ->
-        raw.split(";;").getOrElse(panel) { "ASSISTANT" }
+    // Per-panel HAL button actions (derived from homePrefs + activePanel)
+    val halTapAction: StateFlow<String> = combine(homePrefs, activePanel) { prefs, panel ->
+        prefs.halTapActionRaw.split(";;").getOrElse(panel) { "ASSISTANT" }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "ASSISTANT")
 
-    val halLongPressAction: StateFlow<String> = combine(
-        prefsRepository.halLongPressAction,
-        prefsRepository.activePanel,
-    ) { raw, panel ->
-        raw.split(";;").getOrElse(panel) { "SETTINGS" }
+    val halLongPressAction: StateFlow<String> = combine(homePrefs, activePanel) { prefs, panel ->
+        prefs.halLongPressActionRaw.split(";;").getOrElse(panel) { "SETTINGS" }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SETTINGS")
 
-    val halDoubleTapAction: StateFlow<String> = combine(
-        prefsRepository.halDoubleTapAction,
-        prefsRepository.activePanel,
-    ) { raw, panel ->
-        raw.split(";;").getOrElse(panel) { "APP_DRAWER" }
+    val halDoubleTapAction: StateFlow<String> = combine(homePrefs, activePanel) { prefs, panel ->
+        prefs.halDoubleTapActionRaw.split(";;").getOrElse(panel) { "APP_DRAWER" }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "APP_DRAWER")
 
     private val dbWriteMutex = Mutex()

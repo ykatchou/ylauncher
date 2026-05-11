@@ -14,6 +14,30 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+
+/**
+ * All home-screen display/swipe/HAL preferences in one snapshot.
+ * Backed by a single dataStore.data map so downstream only needs one
+ * collectAsState() instead of thirteen separate subscriptions.
+ */
+data class HomePrefs(
+    val showClock: Boolean = true,
+    val showNotifBubble: Boolean = true,
+    val showNotifPreview: Boolean = true,
+    val showNotifBadge: Boolean = true,
+    val showDonation: Boolean = true,
+    val firstLaunchTimestamp: Long = 0L,
+    val swipeLeftEnabled: Boolean = true,
+    val swipeRightEnabled: Boolean = true,
+    val swipeLeftPackage: String = "",
+    val swipeRightPackage: String = "",
+    val swipeLeftActivity: String = "",
+    val swipeRightActivity: String = "",
+    val halAssistantPackage: String = "com.google.android.apps.googleassistant",
+    val halTapActionRaw: String = "ASSISTANT;;ASSISTANT",
+    val halLongPressActionRaw: String = "SETTINGS;;SETTINGS",
+    val halDoubleTapActionRaw: String = "APP_DRAWER;;APP_DRAWER",
+)
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -88,6 +112,28 @@ class PrefsRepository @Inject constructor(
     val activePanel: Flow<Int> = dataStore.data.map { it[ACTIVE_PANEL] ?: 0 }
     val panelNames: Flow<List<String>> = dataStore.data.map { prefs ->
         prefs[PANEL_NAMES]?.split("|")?.filter { it.isNotBlank() } ?: listOf("Perso", "Pro")
+    }.distinctUntilChanged()
+
+    /** Single snapshot of all home-screen prefs — subscribe once instead of 13×. */
+    val homePrefs: Flow<HomePrefs> = dataStore.data.map { p ->
+        HomePrefs(
+            showClock = p[SHOW_CLOCK] ?: true,
+            showNotifBubble = p[SHOW_NOTIF_BUBBLE] ?: true,
+            showNotifPreview = p[SHOW_NOTIF_PREVIEW] ?: true,
+            showNotifBadge = p[SHOW_NOTIF_BADGE] ?: true,
+            showDonation = p[SHOW_DONATION] ?: true,
+            firstLaunchTimestamp = p[FIRST_LAUNCH_TIMESTAMP] ?: 0L,
+            swipeLeftEnabled = p[SWIPE_LEFT_ENABLED] ?: true,
+            swipeRightEnabled = p[SWIPE_RIGHT_ENABLED] ?: true,
+            swipeLeftPackage = p[SWIPE_LEFT_PACKAGE] ?: "",
+            swipeRightPackage = p[SWIPE_RIGHT_PACKAGE] ?: "",
+            swipeLeftActivity = p[SWIPE_LEFT_ACTIVITY] ?: "",
+            swipeRightActivity = p[SWIPE_RIGHT_ACTIVITY] ?: "",
+            halAssistantPackage = p[HAL_ASSISTANT_PACKAGE] ?: "com.google.android.apps.googleassistant",
+            halTapActionRaw = p[HAL_TAP_ACTION] ?: "ASSISTANT;;ASSISTANT",
+            halLongPressActionRaw = p[HAL_LONG_PRESS_ACTION] ?: "SETTINGS;;SETTINGS",
+            halDoubleTapActionRaw = p[HAL_DOUBLE_TAP_ACTION] ?: "APP_DRAWER;;APP_DRAWER",
+        )
     }.distinctUntilChanged()
 
     // Stored as tenths of a second (0–50 = 0.0–5.0s), default 10 = 1.0s

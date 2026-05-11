@@ -111,27 +111,29 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val favorites by viewModel.favorites.collectAsState()
-    val showClock by viewModel.showClock.collectAsState()
+    val homePrefs by viewModel.homePrefs.collectAsState()
     val isDrawerOpen by viewModel.isDrawerOpen.collectAsState()
-    val swipeLeftEnabled by viewModel.swipeLeftEnabled.collectAsState()
-    val swipeRightEnabled by viewModel.swipeRightEnabled.collectAsState()
-    val swipeLeftPackage by viewModel.swipeLeftPackage.collectAsState()
-    val swipeRightPackage by viewModel.swipeRightPackage.collectAsState()
-    val swipeLeftActivity by viewModel.swipeLeftActivity.collectAsState()
-    val swipeRightActivity by viewModel.swipeRightActivity.collectAsState()
-    val halAssistantPackage by viewModel.halAssistantPackage.collectAsState()
     val halTapAction by viewModel.halTapAction.collectAsState()
     val halLongPressAction by viewModel.halLongPressAction.collectAsState()
     val halDoubleTapAction by viewModel.halDoubleTapAction.collectAsState()
     val notifications by NotificationService.notifications.collectAsState()
     val activePanel by viewModel.activePanel.collectAsState()
     val panelNames by viewModel.panelNames.collectAsState()
-    val showNotifBubble by viewModel.showNotifBubble.collectAsState()
-    val showNotifPreview by viewModel.showNotifPreview.collectAsState()
-    val showNotifBadge by viewModel.showNotifBadge.collectAsState()
     val homeWidgetIds by viewModel.homeWidgetIds.collectAsState()
-    val showDonation by viewModel.showDonation.collectAsState()
-    val firstLaunchTimestamp by viewModel.firstLaunchTimestamp.collectAsState()
+    // Unpack frequently-used prefs as local vals for readability
+    val showClock = homePrefs.showClock
+    val showNotifBubble = homePrefs.showNotifBubble
+    val showNotifPreview = homePrefs.showNotifPreview
+    val showNotifBadge = homePrefs.showNotifBadge
+    val showDonation = homePrefs.showDonation
+    val firstLaunchTimestamp = homePrefs.firstLaunchTimestamp
+    val swipeLeftEnabled = homePrefs.swipeLeftEnabled
+    val swipeRightEnabled = homePrefs.swipeRightEnabled
+    val swipeLeftPackage = homePrefs.swipeLeftPackage
+    val swipeRightPackage = homePrefs.swipeRightPackage
+    val swipeLeftActivity = homePrefs.swipeLeftActivity
+    val swipeRightActivity = homePrefs.swipeRightActivity
+    val halAssistantPackage = homePrefs.halAssistantPackage
     val billingState by billingManager.billingState.collectAsState()
     val showCoffeeFab = showDonation && firstLaunchTimestamp > 0L &&
         (System.currentTimeMillis() - firstLaunchTimestamp) >= ONE_WEEK_MS
