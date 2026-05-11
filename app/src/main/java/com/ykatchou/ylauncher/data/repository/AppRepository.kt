@@ -10,6 +10,7 @@ import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
 import com.ykatchou.ylauncher.data.model.AppInfo
+import com.ykatchou.ylauncher.util.AppIconCache
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,11 +36,23 @@ class AppRepository @Inject constructor(
     val appList: StateFlow<List<AppInfo>> = _appList.asStateFlow()
 
     private val callback = object : LauncherApps.Callback() {
-        override fun onPackageRemoved(packageName: String?, user: UserHandle?) = refreshApps()
+        override fun onPackageRemoved(packageName: String?, user: UserHandle?) {
+            packageName?.let { AppIconCache.evict(it) }
+            refreshApps()
+        }
         override fun onPackageAdded(packageName: String?, user: UserHandle?) = refreshApps()
-        override fun onPackageChanged(packageName: String?, user: UserHandle?) = refreshApps()
-        override fun onPackagesAvailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) = refreshApps()
-        override fun onPackagesUnavailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) = refreshApps()
+        override fun onPackageChanged(packageName: String?, user: UserHandle?) {
+            packageName?.let { AppIconCache.evict(it) }
+            refreshApps()
+        }
+        override fun onPackagesAvailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) {
+            packageNames?.forEach { AppIconCache.evict(it) }
+            refreshApps()
+        }
+        override fun onPackagesUnavailable(packageNames: Array<out String>?, user: UserHandle?, replacing: Boolean) {
+            packageNames?.forEach { AppIconCache.evict(it) }
+            refreshApps()
+        }
     }
 
     fun registerCallback() {

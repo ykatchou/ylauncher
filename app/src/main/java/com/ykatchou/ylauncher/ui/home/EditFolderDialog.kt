@@ -27,12 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.graphics.drawable.toBitmap
 import com.ykatchou.ylauncher.data.model.AppInfo
+import com.ykatchou.ylauncher.util.AppIconCache
 import com.ykatchou.ylauncher.data.model.FolderApp
 
 @Composable
@@ -121,8 +120,8 @@ fun EditFolderDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 appInfo?.icon?.let { drawable ->
-                                    val bitmap = remember(drawable) {
-                                        drawable.toBitmap(width = 36, height = 36).asImageBitmap()
+                                    val bitmap = remember(folderApp.packageName) {
+                                        AppIconCache.get(drawable, folderApp.packageName, 36)
                                     }
                                     Image(
                                         bitmap = bitmap,

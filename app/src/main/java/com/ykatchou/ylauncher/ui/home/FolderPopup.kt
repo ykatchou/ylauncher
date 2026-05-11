@@ -31,14 +31,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.core.graphics.drawable.toBitmap
 import com.ykatchou.ylauncher.data.model.AppInfo
+import com.ykatchou.ylauncher.util.AppIconCache
 import com.ykatchou.ylauncher.data.model.FolderApp
 import com.ykatchou.ylauncher.service.NotificationService
 import kotlinx.coroutines.delay
@@ -185,8 +184,8 @@ private fun FolderAppRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         appInfo?.icon?.let { drawable ->
-            val bitmap = remember(drawable) {
-                drawable.toBitmap(width = 40, height = 40).asImageBitmap()
+            val bitmap = remember(folderApp.packageName) {
+                AppIconCache.get(drawable, folderApp.packageName, 40)
             }
             Image(
                 bitmap = bitmap,

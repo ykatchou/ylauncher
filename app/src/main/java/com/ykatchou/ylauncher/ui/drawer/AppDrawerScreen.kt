@@ -43,15 +43,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ykatchou.ylauncher.data.model.AppInfo
 import com.ykatchou.ylauncher.ui.components.AlphabetSidebar
+import com.ykatchou.ylauncher.util.AppIconCache
 import com.ykatchou.ylauncher.util.AppLauncher
 import com.ykatchou.ylauncher.util.openAppInfo
 import com.ykatchou.ylauncher.util.openSearch
@@ -309,8 +308,8 @@ fun AppDrawerItem(
     ) {
         // App icon
         app.icon?.let { drawable ->
-            val bitmap = remember(drawable) {
-                drawable.toBitmap(width = 40, height = 40).asImageBitmap()
+            val bitmap = remember(app.packageName) {
+                AppIconCache.get(drawable, app.packageName, 40)
             }
             androidx.compose.foundation.Image(
                 bitmap = bitmap,

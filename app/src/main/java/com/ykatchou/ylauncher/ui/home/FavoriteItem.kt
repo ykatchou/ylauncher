@@ -32,14 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import com.ykatchou.ylauncher.data.model.AppInfo
+import com.ykatchou.ylauncher.util.AppIconCache
 import com.ykatchou.ylauncher.data.model.AppNotification
 import com.ykatchou.ylauncher.ui.theme.HomeTextColor
 import com.ykatchou.ylauncher.ui.theme.HomeTextColorDim
@@ -126,15 +125,17 @@ fun FavoriteItem(
                         )
                     }
                 } else {
-                    appInfo?.icon?.let { drawable ->
-                        val bitmap = remember(drawable) {
-                            drawable.toBitmap(width = 44, height = 44).asImageBitmap()
+                    appInfo?.let { info ->
+                        info.icon?.let { drawable ->
+                            val bitmap = remember(info.packageName) {
+                                AppIconCache.get(drawable, info.packageName, 44)
+                            }
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = displayName,
+                                modifier = Modifier.size(44.dp),
+                            )
                         }
-                        Image(
-                            bitmap = bitmap,
-                            contentDescription = displayName,
-                            modifier = Modifier.size(44.dp),
-                        )
                     }
                 }
                 if (showNotifBadge && notification != null && notification.count > 0) {

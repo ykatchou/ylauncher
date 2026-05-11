@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :app:compileDebugKotlin --info 2>&1 | grep -E \"IllegalArgument|NDK|SDK|version\" | head -20)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(adb devices:*)",
+      "Bash(adb mdns:*)",
+      "Bash(java:*)",
+      "Bash(/usr/libexec/java_home -V 2>&1)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew assembleDebug 2>&1 | tail -20)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew *)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew assembleDebug 2>&1 | grep -i \"error\")",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew assembleDebug 2>&1 | grep -E \"e:|Error\" | head -20)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew assembleDebug 2>&1 | grep -i \"unused\\\\|import\\\\|unresolved\\\\|cannot\" | head -20)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew assembleDebug 2>&1 | tail -30)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew installDebug 2>&1 | tail -5)",
+      "Bash(JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" ./gradlew installDebug 2>&1)",
+      "Bash(just:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(rtk find:*)",
+      "Bash(rtk *)"
+    ]
+  }
+}

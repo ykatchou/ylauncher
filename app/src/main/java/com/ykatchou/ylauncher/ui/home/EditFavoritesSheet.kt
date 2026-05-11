@@ -20,12 +20,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import com.ykatchou.ylauncher.data.model.AppInfo
+import com.ykatchou.ylauncher.util.AppIconCache
 import com.ykatchou.ylauncher.data.model.FavoriteApp
 
 @Composable
@@ -113,8 +112,8 @@ fun EditFavoritesSheet(
                         } else {
                             val appInfo = remember(favorite.packageName) { resolveApp(favorite.packageName) }
                             appInfo?.icon?.let { drawable ->
-                                val bitmap = remember(drawable) {
-                                    drawable.toBitmap(width = 32, height = 32).asImageBitmap()
+                                val bitmap = remember(favorite.packageName) {
+                                    AppIconCache.get(drawable, favorite.packageName, 32)
                                 }
                                 Image(
                                     bitmap = bitmap,
