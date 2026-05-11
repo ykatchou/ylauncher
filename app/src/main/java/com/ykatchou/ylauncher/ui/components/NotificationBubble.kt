@@ -85,22 +85,18 @@ fun NotificationBubble(
         }
     }
 
-    val items = remember(notifications, now) {
+    // Structural list — only recomputed when notifications change, not every 30 s tick
+    val items = remember(notifications) {
         notifications
             .sortedByDescending { it.timestamp }
             .take(maxItems)
             .map { notif ->
-                val timeAgo = DateUtils.getRelativeTimeSpanString(
-                    notif.timestamp, now,
-                    DateUtils.MINUTE_IN_MILLIS,
-                    DateUtils.FORMAT_ABBREV_RELATIVE,
-                ).toString()
                 val content = if (notif.title.isNotBlank() && notif.text.isNotBlank()) {
                     "${notif.title}: ${notif.text}"
                 } else {
                     notif.title.ifBlank { notif.text }
                 }
-                Triple(notif.packageName, content, timeAgo)
+                Triple(notif.packageName, notif.timestamp, content)
             }
     }
 
@@ -123,7 +119,15 @@ fun NotificationBubble(
                     color = HomeTextColorDim,
                 )
             } else {
-                items.forEachIndexed { index, (packageName, content, timeAgo) ->
+                items.forEachIndexed { index, (packageName, timestamp, content) ->
+                    // timeAgo recomputed per-item only when its own timestamp or the tick changes
+                    val timeAgo = remember(timestamp, now) {
+                        DateUtils.getRelativeTimeSpanString(
+                            timestamp, now,
+                            DateUtils.MINUTE_IN_MILLIS,
+                            DateUtils.FORMAT_ABBREV_RELATIVE,
+                        ).toString()
+                    }
                     key(packageName) {
                     val appLabel = remember(packageName) { resolveAppLabel(packageName) }
                     if (index > 0) {
