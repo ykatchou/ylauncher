@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -44,7 +45,7 @@ class AppDrawerViewModel @Inject constructor(
 
     val filteredApps: StateFlow<List<AppInfo>> = combine(
         appRepository.appList,
-        _searchQuery,
+        _searchQuery.debounce { if (it.isBlank()) 0L else 150L },
         prefsRepository.hiddenApps,
     ) { apps, query, hidden ->
         val visible = apps.filter { app ->

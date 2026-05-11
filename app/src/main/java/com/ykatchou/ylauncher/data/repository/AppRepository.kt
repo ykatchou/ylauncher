@@ -68,13 +68,15 @@ class AppRepository @Inject constructor(
         for (profile in userManager.userProfiles) {
             val activities = launcherApps.getActivityList(null, profile)
             for (activity in activities) {
+                val label = activity.label.toString()
                 apps.add(
                     AppInfo(
-                        appLabel = activity.label.toString(),
+                        appLabel = label,
                         packageName = activity.applicationInfo.packageName,
                         activityClassName = activity.componentName.className,
                         userHandle = profile,
                         icon = activity.getIcon(0),
+                        normalizedLabel = normalizeText(label),
                     )
                 )
             }
@@ -93,10 +95,11 @@ class AppRepository @Inject constructor(
 
     fun filterApps(query: String): List<AppInfo> {
         if (query.isBlank()) return _appList.value
-        val normalized = normalizeText(query.trim())
+        val trimmed = query.trim()
+        val normalized = normalizeText(trimmed)
         return _appList.value.filter { app ->
-            app.appLabel.contains(query.trim(), ignoreCase = true) ||
-                normalizeText(app.appLabel).contains(normalized, ignoreCase = true)
+            app.appLabel.contains(trimmed, ignoreCase = true) ||
+                app.normalizedLabel.contains(normalized, ignoreCase = true)
         }
     }
 

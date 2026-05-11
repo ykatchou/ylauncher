@@ -9,6 +9,8 @@ data class AppInfo(
     val activityClassName: String?,
     val userHandle: UserHandle,
     val icon: Drawable? = null,
+    /** Pre-computed NFD-normalized, punctuation-stripped label for fast search. */
+    val normalizedLabel: String = appLabel,
 ) : Comparable<AppInfo> {
     override fun compareTo(other: AppInfo): Int =
         appLabel.compareTo(other.appLabel, ignoreCase = true)
