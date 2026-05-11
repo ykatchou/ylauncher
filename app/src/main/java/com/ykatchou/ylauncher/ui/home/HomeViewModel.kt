@@ -58,9 +58,8 @@ class HomeViewModel @Inject constructor(
 
     val suggestedApps: StateFlow<List<AppInfo>> = combine(
         allFavorites,
-        appRepository.appList,
         prefsRepository.suggestionCount,
-    ) { favs, _, count ->
+    ) { favs, count ->
         if (count == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
         val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = count + 10)
@@ -69,10 +68,9 @@ class HomeViewModel @Inject constructor(
 
     val recentApps: StateFlow<List<AppInfo>> = combine(
         allFavorites,
-        appRepository.appList,
         prefsRepository.recentAppsCount,
         suggestedApps,
-    ) { favs, _, recentCount, suggested ->
+    ) { favs, recentCount, suggested ->
         if (recentCount == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
         val suggestedPackages = suggested.map { it.packageName }.toSet()
