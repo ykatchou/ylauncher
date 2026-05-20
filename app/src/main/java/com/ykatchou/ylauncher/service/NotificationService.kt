@@ -3,6 +3,7 @@ package com.ykatchou.ylauncher.service
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.ykatchou.ylauncher.data.model.AppNotification
+import com.ykatchou.ylauncher.util.YLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,7 +54,9 @@ class NotificationService : NotificationListenerService() {
                 )
             }
             _notifications.value = current
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            YLogger.w(TAG, "reseedNotifications failed", e)
+        }
     }
 
     override fun onListenerDisconnected() {
@@ -62,6 +65,8 @@ class NotificationService : NotificationListenerService() {
     }
 
     companion object {
+        private const val TAG = "NotificationService"
+
         var instance: NotificationService? = null
             private set
 

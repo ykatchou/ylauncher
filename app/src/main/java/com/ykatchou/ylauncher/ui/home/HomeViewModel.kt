@@ -16,7 +16,9 @@ import com.ykatchou.ylauncher.util.UsageStatsHelper
 import com.ykatchou.ylauncher.widget.LauncherWidgetHost
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.ykatchou.ylauncher.util.YLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 @HiltViewModel
@@ -112,14 +115,32 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            appRepository.refreshApps()
+            try {
+                withTimeout(10_000) { appRepository.refreshApps() }
+            } catch (e: TimeoutCancellationException) {
+                YLogger.e(TAG, "refreshApps timed out", e)
+            } catch (e: Exception) {
+                YLogger.e(TAG, "refreshApps failed", e)
+            }
             appRepository.registerCallback()
-            autoPopulateFavoritesIfNeeded()
-            prefsRepository.recordFirstLaunchIfNeeded()
+            try {
+                autoPopulateFavoritesIfNeeded()
+            } catch (e: Exception) {
+                YLogger.e(TAG, "autoPopulate failed", e)
+            }
+            try {
+                prefsRepository.recordFirstLaunchIfNeeded()
+            } catch (e: Exception) {
+                YLogger.e(TAG, "recordFirstLaunch failed", e)
+            }
         }
         viewModelScope.launch {
             com.ykatchou.ylauncher.MainActivity.homePressed.collect { closeDrawer() }
         }
+    }
+
+    companion object {
+        private const val TAG = "HomeViewModel"
     }
 
     private suspend fun autoPopulateFavoritesIfNeeded() {

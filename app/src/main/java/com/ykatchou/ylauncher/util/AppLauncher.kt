@@ -5,8 +5,11 @@ import android.content.Context
 import android.content.pm.LauncherApps
 import android.os.Process
 import android.os.UserHandle
+import com.ykatchou.ylauncher.util.YLogger
 
 object AppLauncher {
+
+    private const val TAG = "AppLauncher"
 
     fun launch(
         context: Context,
@@ -45,7 +48,7 @@ object AppLauncher {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            YLogger.e(TAG, "launch failed: $packageName", e)
             false
         }
     }
