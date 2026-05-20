@@ -19,7 +19,8 @@
       "Bash(just:*)",
       "Bash(git commit -m ':*)",
       "Bash(rtk find:*)",
-      "Bash(rtk *)"
+      "Bash(rtk *)",
+      "Bash(adb:*)"
     ]
   }
 }

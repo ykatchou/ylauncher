@@ -120,6 +120,7 @@ fun HomeScreen(
     val activePanel by viewModel.activePanel.collectAsState()
     val panelNames by viewModel.panelNames.collectAsState()
     val homeWidgetIds by viewModel.homeWidgetIds.collectAsState()
+    val appList by appRepository.appList.collectAsState()
     // Unpack frequently-used prefs as local vals for readability
     val showClock = homePrefs.showClock
     val showNotifBubble = homePrefs.showNotifBubble
@@ -337,7 +338,7 @@ fun HomeScreen(
                                             } else null,
                                         )
                                     } else {
-                                        val appInfo: AppInfo? = remember(favorite.packageName, appRepository.appList.value) {
+                                        val appInfo: AppInfo? = remember(favorite.packageName, appList) {
                                             appRepository.findAppByPackage(favorite.packageName)
                                         }
                                         FavoriteItem(

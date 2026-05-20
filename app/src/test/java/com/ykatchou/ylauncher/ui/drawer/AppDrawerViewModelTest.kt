@@ -34,7 +34,7 @@ class AppDrawerViewModelTest {
             every { autoShowKeyboard } returns flowOf(true)
             every { hiddenApps } returns flowOf(emptySet())
         }
-        viewModel = AppDrawerViewModel(appRepository, prefsRepository)
+        viewModel = AppDrawerViewModel(appRepository, prefsRepository, mockk(relaxed = true))
     }
 
     // --- updateSearchQuery ---
