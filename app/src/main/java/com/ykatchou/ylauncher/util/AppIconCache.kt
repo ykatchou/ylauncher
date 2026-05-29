@@ -23,6 +23,9 @@ object AppIconCache {
             .also { cache.put(key, it) }
     }
 
+    fun getIfCached(packageName: String, sizePx: Int): ImageBitmap? =
+        cache["$packageName|$sizePx"]
+
     fun evict(packageName: String) {
         cache.snapshot().keys
             .filter { it.startsWith("$packageName|") }

@@ -35,9 +35,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -306,16 +310,25 @@ fun AppDrawerItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // App icon
+        // App icon — check cache first (instant), convert off main thread on miss
         app.icon?.let { drawable ->
-            val bitmap = remember(app.packageName) {
-                AppIconCache.get(drawable, app.packageName, 40)
+            val bitmap: ImageBitmap? by produceState(
+                initialValue = AppIconCache.getIfCached(app.packageName, 40),
+                key1 = app.packageName,
+            ) {
+                if (value == null) {
+                    value = withContext(Dispatchers.IO) {
+                        AppIconCache.get(drawable, app.packageName, 40)
+                    }
+                }
             }
-            androidx.compose.foundation.Image(
-                bitmap = bitmap,
-                contentDescription = app.appLabel,
-                modifier = Modifier.size(40.dp),
-            )
+            bitmap?.let {
+                androidx.compose.foundation.Image(
+                    bitmap = it,
+                    contentDescription = app.appLabel,
+                    modifier = Modifier.size(40.dp),
+                )
+            }
         }
 
         Text(

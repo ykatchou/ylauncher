@@ -42,6 +42,23 @@ class HomeViewModel @Inject constructor(
     val widgetHost: LauncherWidgetHost,
 ) : ViewModel() {
 
+    private val _usageStatsVersion = MutableStateFlow(0)
+
+    fun refreshUsageStats() {
+        _usageStatsVersion.value++
+    }
+
+    fun refreshAppsIfEmpty() {
+        if (appRepository.appList.value.isNotEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                withTimeout(10_000) { appRepository.refreshApps() }
+            } catch (e: Exception) {
+                YLogger.e(TAG, "refreshAppsIfEmpty failed", e)
+            }
+        }
+    }
+
     // All favorites (unfiltered, used by suggestions/recent to exclude all fav packages)
     private val allFavorites = favoriteDao.getAllFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -64,7 +81,8 @@ class HomeViewModel @Inject constructor(
         allFavorites,
         prefsRepository.suggestionCount,
         appRepository.appList,
-    ) { favs, count, _ ->
+        _usageStatsVersion,
+    ) { favs, count, _, _ ->
         if (count == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
         val topApps = UsageStatsHelper.getTopApps(context, appRepository, count = count + 10)
@@ -76,7 +94,8 @@ class HomeViewModel @Inject constructor(
         allFavorites,
         prefsRepository.recentAppsCount,
         suggestedApps,
-    ) { favs, recentCount, suggested ->
+        _usageStatsVersion,
+    ) { favs, recentCount, suggested, _ ->
         if (recentCount == 0) return@combine emptyList()
         val favPackages = favs.map { it.packageName }.toSet()
         val suggestedPackages = suggested.map { it.packageName }.toSet()
