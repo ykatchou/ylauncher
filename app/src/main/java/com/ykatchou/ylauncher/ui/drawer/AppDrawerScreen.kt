@@ -54,7 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ykatchou.ylauncher.data.model.AppInfo
 import com.ykatchou.ylauncher.ui.components.AlphabetSidebar
 import com.ykatchou.ylauncher.util.AppIconCache

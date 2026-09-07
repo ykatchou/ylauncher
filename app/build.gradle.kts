@@ -3,7 +3,6 @@ import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -18,7 +17,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.ykatchou.ylauncher"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.ykatchou.ylauncher"
@@ -56,16 +55,21 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
         compose = true
+    }
+
+    testOptions {
+        unitTests {
+            // android.util.Log is a stub in local unit tests and throws by default.
+            // YLogger calls it from ViewModel init coroutines, where the throw surfaces
+            // as an uncaught exception and fails an unrelated later test.
+            isReturnDefaultValues = true
+        }
     }
 
     packaging {

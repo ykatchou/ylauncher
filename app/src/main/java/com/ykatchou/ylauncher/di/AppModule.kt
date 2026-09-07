@@ -138,7 +138,7 @@ object AppModule {
         )
             .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .addCallback(SEED_DEFAULT_PANEL_CALLBACK)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

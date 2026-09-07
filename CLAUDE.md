@@ -23,15 +23,36 @@ crash traces on its own — there is nothing to upload by hand.
 
 ## Building
 
-Pin a JDK 21 for every Gradle invocation:
+Toolchain: Gradle 9.7.1, AGP 9.3.2, Kotlin 2.4.10 (built into AGP), JDK 25, `compileSdk = 37`.
+Java/Kotlin language level is 21.
+
+Pin JDK 25 for every Gradle invocation:
 
 ```
-JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew <task>
+JAVA_HOME=$(/usr/libexec/java_home -v 25) ./gradlew <task>
 ```
 
-With `JAVA_HOME` unset the launcher picks up the machine-default JDK 26, which Gradle 8.11
-rejects — it fails instantly with a bare `26.0.2` and no explanation. `local.properties` sets
-`org.gradle.java.home` to a JDK 17 for the daemon; that does not cover the launcher JVM.
+That resolves to `~/Library/Java/JavaVirtualMachines/temurin-25.jdk` — a user-level install,
+so no `sudo` and no Homebrew cask. `local.properties` (untracked) pins the same path via
+`org.gradle.java.home` for the daemon; that does not cover the launcher JVM, hence both.
+
+**JDK 26 does not work** — the build succeeds but 19 unit tests fail with
+`IllegalArgumentException at ClassReader.java:200`, because mockk's bundled ASM cannot read
+class file v70. JDK 26 also warns that reflective final-field mutation (which mockk relies on)
+will be blocked outright in a future release. Stay on 25 until mockk catches up.
+
+The language level stays at 21 even though JDK 25 can emit v69 — verified working through
+D8/R8, but it buys nothing here (there is almost no Java source) and puts the build ahead of
+what AGP documents as tested.
+
+AGP 9 compiles Kotlin itself: **do not** re-apply `org.jetbrains.kotlin.android`, and there is
+no `kotlinOptions {}` block — `compileOptions` drives the Kotlin JVM target too. The Compose
+compiler plugin (`org.jetbrains.kotlin.plugin.compose`) is still applied separately, and it is
+what pulls KGP up to the catalog's `kotlin` version over AGP's bundled 2.2.10. If that plugin
+ever goes away, Kotlin silently drops back to AGP's bundled version.
+
+`targetSdk` stays at 36 deliberately. Bumping it opts the launcher into Android 17 runtime
+behavior changes and needs on-device testing — it is not part of a toolchain upgrade.
 
 ## Database
 
