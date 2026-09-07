@@ -35,7 +35,7 @@ data class HomePrefs(
     val swipeRightPackage: String = "",
     val swipeLeftActivity: String = "",
     val swipeRightActivity: String = "",
-    val halAssistantPackage: String = "com.google.android.apps.googleassistant",
+    val halAssistantPackage: String = "",
     val halTapActionRaw: String = "ASSISTANT",
     val halLongPressActionRaw: String = "SETTINGS",
     val halDoubleTapActionRaw: String = "APP_DRAWER",
@@ -102,7 +102,7 @@ class PrefsRepository @Inject constructor(
     val swipeRightPackage: Flow<String> = dataStore.data.map { it[SWIPE_RIGHT_PACKAGE] ?: "" }
     val swipeLeftActivity: Flow<String> = dataStore.data.map { it[SWIPE_LEFT_ACTIVITY] ?: "" }
     val swipeRightActivity: Flow<String> = dataStore.data.map { it[SWIPE_RIGHT_ACTIVITY] ?: "" }
-    val halAssistantPackage: Flow<String> = dataStore.data.map { it[HAL_ASSISTANT_PACKAGE] ?: "com.google.android.apps.googleassistant" }
+    val halAssistantPackage: Flow<String> = dataStore.data.map { it[HAL_ASSISTANT_PACKAGE] ?: "" }
 
     val hiddenApps: Flow<Set<String>> = dataStore.data.map { prefs ->
         prefs[HIDDEN_APPS]?.split("|")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
@@ -133,7 +133,7 @@ class PrefsRepository @Inject constructor(
             swipeRightPackage = p[SWIPE_RIGHT_PACKAGE] ?: "",
             swipeLeftActivity = p[SWIPE_LEFT_ACTIVITY] ?: "",
             swipeRightActivity = p[SWIPE_RIGHT_ACTIVITY] ?: "",
-            halAssistantPackage = p[HAL_ASSISTANT_PACKAGE] ?: "com.google.android.apps.googleassistant",
+            halAssistantPackage = p[HAL_ASSISTANT_PACKAGE] ?: "",
             halTapActionRaw = (p[HAL_TAP_ACTION] ?: "ASSISTANT").split(";;").first(),
             halLongPressActionRaw = (p[HAL_LONG_PRESS_ACTION] ?: "SETTINGS").split(";;").first(),
             halDoubleTapActionRaw = (p[HAL_DOUBLE_TAP_ACTION] ?: "APP_DRAWER").split(";;").first(),

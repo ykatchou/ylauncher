@@ -290,7 +290,7 @@ class ConfigBackupRepository @Inject constructor(
                 swipeRightPackage = s.optString("swipeRightPackage", ""),
                 swipeRightActivity = s.optString("swipeRightActivity", ""),
                 swipeRightName = s.optString("swipeRightName", "Phone"),
-                halAssistantPackage = s.optString("halAssistantPackage", "com.google.android.apps.googleassistant"),
+                halAssistantPackage = s.optString("halAssistantPackage", ""),
                 halTapAction = s.optString("halTapAction", "ASSISTANT"),
                 halLongPressAction = s.optString("halLongPressAction", "SETTINGS"),
                 halDoubleTapAction = s.optString("halDoubleTapAction", "APP_DRAWER"),

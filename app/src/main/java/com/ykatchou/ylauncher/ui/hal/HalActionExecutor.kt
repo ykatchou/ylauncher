@@ -28,10 +28,15 @@ object HalActionExecutor {
             HalAction.EDIT_FAVORITES -> onEditFavorites()
             HalAction.ASSISTANT -> {
                 if (assistantPackage.isNotBlank() && AppLauncher.launch(context, assistantPackage)) return
-                val intent = Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                try { context.startActivity(intent) } catch (_: Exception) {
-                    context.showToast("No assistant found")
+                // ACTION_ASSIST resolves to the assistant the user picked in the system
+                // "Digital assistant app" setting; ACTION_VOICE_COMMAND is the fallback.
+                for (action in listOf(Intent.ACTION_ASSIST, Intent.ACTION_VOICE_COMMAND)) {
+                    try {
+                        context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        return
+                    } catch (_: Exception) {}
                 }
+                context.showToast("No assistant found")
             }
             HalAction.NOTIFICATIONS -> context.expandNotificationDrawer()
             HalAction.CAMERA -> context.openCameraApp()
